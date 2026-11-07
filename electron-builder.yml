@@ -1,18 +1,20 @@
-appId: com.electron.app
-productName: viusal
+appId: dev.addiator.visualizer
+productName: Visualizer
 directories:
   buildResources: build
 files:
   - '!**/.vscode/*'
+  - '!**/.claude/*'
   - '!src/*'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
-  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - '!{vite.panel.config.mts,vitest.config.mts}'
+  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md,CLAUDE.md,Visualizer_plan.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
-  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json,tsconfig.panel.json}'
 asarUnpack:
   - resources/**
 win:
-  executableName: viusal
+  executableName: visualizer
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -21,23 +23,21 @@ nsis:
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
-    - NSCameraUsageDescription: Application requests access to the device's camera.
-    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
-    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
-    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
+    - NSMicrophoneUsageDescription: Visualizer analizuje dźwięk, żeby sterować efektami.
   notarize: false
 dmg:
   artifactName: ${name}-${version}.${ext}
 linux:
   target:
     - AppImage
-    - snap
     - deb
-  maintainer: electronjs.org
-  category: Utility
+  executableName: visualizer
+  maintainer: Shaggy
+  category: AudioVideo
+  syncDesktopName: true
+  synopsis: Wideo z filtrami sterowanymi dźwiękiem z systemu
 appImage:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: Visualizer-${version}.${ext}
+deb:
+  artifactName: visualizer_${version}_${arch}.${ext}
 npmRebuild: false
-publish:
-  provider: generic
-  url: https://example.com/auto-updates

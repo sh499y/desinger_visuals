@@ -1,0 +1,41 @@
+@import 'tailwindcss';
+@import '@xyflow/react/dist/style.css';
+
+@theme {
+  --color-accent: #a78bfa;
+  --color-signal: #22d3ee;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #0a0a0a;
+  color: #e5e5e5;
+  font-family: system-ui, sans-serif;
+  color-scheme: dark;
+}
+
+input[type='range'] {
+  accent-color: var(--color-accent);
+}
+
+.react-flow__handle {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #0a0a0a;
+}
+
+/* Tryb usuwania w grafie: kabel pod kursorem na czerwono. */
+.react-flow__edge.vz-edge-delete {
+  cursor: pointer;
+}
+
+.react-flow__edge.vz-edge-delete:hover .react-flow__edge-path {
+  stroke: #ef4444 !important;
+  stroke-width: 4 !important;
+}

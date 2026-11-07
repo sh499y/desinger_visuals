@@ -1,0 +1,14 @@
+{
+  "extends": "@electron-toolkit/tsconfig/tsconfig.web.json",
+  "include": ["src/panel/src/**/*", "src/shared/**/*"],
+  "compilerOptions": {
+    "composite": true,
+    "jsx": "react-jsx",
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@panel/*": ["src/panel/src/*"],
+      "@shared/*": ["src/shared/*"]
+    }
+  }
+}

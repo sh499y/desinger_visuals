@@ -1,22 +1,16 @@
-import { contextBridge } from 'electron'
-import { electronAPI } from '@electron-toolkit/preload'
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
+import type { AudioLevels, AudioStatus, FrontApi, FrontInit, ServerMessage } from '@shared/types'
 
-// Custom APIs for renderer
-const api = {}
-
-// Use `contextBridge` APIs to expose Electron APIs to
-// renderer only if context isolation is enabled, otherwise
-// just add to the DOM global.
-if (process.contextIsolated) {
-  try {
-    contextBridge.exposeInMainWorld('electron', electronAPI)
-    contextBridge.exposeInMainWorld('api', api)
-  } catch (error) {
-    console.error(error)
-  }
-} else {
-  // @ts-ignore (define in dts)
-  window.electron = electronAPI
-  // @ts-ignore (define in dts)
-  window.api = api
+const api: FrontApi = {
+  init: () => ipcRenderer.invoke('front:init') as Promise<FrontInit>,
+  onMessage: (cb) => {
+    const listener = (_e: IpcRendererEvent, msg: ServerMessage): void => cb(msg)
+    ipcRenderer.on('front:message', listener)
+    return () => ipcRenderer.removeListener('front:message', listener)
+  },
+  sendAudio: (levels: AudioLevels) => ipcRenderer.send('front:audio', levels),
+  sendAudioStatus: (status: AudioStatus) => ipcRenderer.send('front:audio-status', status),
+  openPanel: () => ipcRenderer.send('front:open-panel')
 }
+
+contextBridge.exposeInMainWorld('api', api)
