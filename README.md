@@ -65,7 +65,8 @@ Wydajność: najlepiej H.264 1080p (sprzętowe dekodowanie, VAAPI). Na słabszym
 | Komenda | Co robi |
 | --- | --- |
 | `npm run dev` | okno + panel z hot reloadem |
-| `npm test` | testy (Vitest): graf, sygnały, analiza audio, beat |
+| `npm test` | testy jednostkowe (Vitest): serwer, stan, biblioteka, graf, efekty, audio, wideo, panel |
+| `npm run test:coverage` | testy + raport pokrycia (`coverage/index.html`) |
 | `npm run typecheck` / `npm run lint` | TypeScript i ESLint |
 | `npm run build` | build okna, procesu głównego i panelu do `out/` |
 | `npm run build:linux` | `dist/Visualizer-<wersja>.AppImage` i `dist/visualizer_<wersja>_amd64.deb` |

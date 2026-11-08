@@ -118,7 +118,8 @@ export class ControlServer {
     return this.start()
   }
 
-  private async build(): Promise<FastifyInstance> {
+  /** Buduje aplikację Fastify bez nasłuchiwania (start() lub testy przez inject). */
+  async build(): Promise<FastifyInstance> {
     const { config, store, library, projects, panelDir, devPanelUrl, mediaKey } = this.deps
     const app = Fastify({ logger: false, bodyLimit: 8 * 1024 * 1024 })
 
@@ -136,7 +137,8 @@ export class ControlServer {
         .replace(/:\d+$/, '')
         .replace(/^\[(.*)\]$/, '$1')
         .toLowerCase()
-      if (isLoopback(req.socket.remoteAddress)) {
+      // Brak gniazda (nietypowe żądanie) traktujemy jak połączenie z zewnątrz.
+      if (isLoopback(req.socket?.remoteAddress)) {
         if (!LOOPBACK_HOSTS.has(hostname))
           return reply.code(403).send({ error: 'Niedozwolony host' })
       } else {
@@ -150,7 +152,8 @@ export class ControlServer {
       if ((isWs || !['GET', 'HEAD', 'OPTIONS'].includes(req.method)) && origin) {
         let sameHost = false
         try {
-          sameHost = new URL(origin).host === host
+          // Przez URL, żeby domyślny port (:80) nie psuł porównania.
+          sameHost = new URL(origin).host === new URL(`http://${host}`).host
         } catch {
           // zły Origin
         }

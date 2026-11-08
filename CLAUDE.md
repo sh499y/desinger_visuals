@@ -60,9 +60,20 @@ Nowy typ node'a: definicja w `src/shared/nodes.ts`, a dla filtra efekt w `engine
 ```bash
 npm run typecheck   # node + web + panel
 npm run lint
-npm test            # vitest
+npm test            # vitest (npm run test:coverage – raport w coverage/)
 npm run build       # out/main, out/preload, out/renderer, out/panel
 ```
+
+## Testy
+
+Testy jednostkowe (Vitest) leżą obok kodu jako `*.test.ts`. Domyślne środowisko to Node.
+
+- **Proces główny:** pliki i stan na katalogach tymczasowych (`mkdtemp`). Electron mockujemy przez `vi.mock('electron')` (`config.test.ts`), a `pactl` przez `vi.mock('child_process')` (`loopback.test.ts`).
+- **Serwer:** `server.build()` + `app.inject()` / `app.injectWS()`, bez portu. `injectWS` nie ma gniazda, więc podaj `{ socket: { remoteAddress: '127.0.0.1' }, headers: { host: 'localhost' } }`. Tylko testy `start/stop` otwierają prawdziwe porty (wysokie, losowe).
+- **Silnik:** API przeglądarki (`navigator.mediaDevices`, `AudioContext`, `AnalyserNode`) zastępujemy atrapami przez `vi.stubGlobal`. Testy z DOM zaczynają się od `// @vitest-environment happy-dom` (`VideoSource.test.ts`, `panel/src/api.test.ts`).
+- **Panel:** `store.test.ts` mockuje `./api` i symuluje wiadomości z serwera.
+- **Bez testów jednostkowych:** `main/index.ts`, `main/window.ts`, preload, `engine/renderer.ts` (WebGL) i komponenty React. Sprawdzamy je ręcznie albo zrzutami ekranu. Są wyłączone z raportu pokrycia w `vitest.config.mts`.
+- Nowa logika = nowy test. Błąd znaleziony w aplikacji najpierw odtwórz testem.
 
 `npm run dev` uruchamia okno i panel (`:5174`) z HMR. Z rozszerzenia VS Code najpierw `unset ELECTRON_RUN_AS_NODE`. Aplikacja ma blokadę jednej instancji, więc drugie uruchomienie tylko fokusuje okno.
 

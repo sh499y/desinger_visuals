@@ -23,9 +23,14 @@ export function safeFileName(name: string): string {
     .replace(/[^\p{L}\p{N} ._()-]/gu, '_')
     .replace(/^\.+/, '')
     .trim()
-    .slice(0, 120)
-  return base || 'video'
+  if (!base) return 'video'
+  // Skracamy rdzeń, nie rozszerzenie – inaczej długa nazwa traci „.mp4”.
+  const ext = extname(base).slice(0, 10)
+  const stem = base.slice(0, base.length - extname(base).length)
+  return (stem.slice(0, MAX_NAME - ext.length) || 'video') + ext
 }
+
+const MAX_NAME = 120
 
 export class Library {
   private files = new Map<string, string>()
@@ -119,8 +124,13 @@ export class Library {
   async save(name: string, data: Readable): Promise<string> {
     const clean = safeFileName(name)
     const ext = extname(clean).toLowerCase()
-    if (!VIDEO_EXTENSIONS.has(ext))
-      throw new Error(`Nieobsługiwany format: ${ext || 'brak rozszerzenia'}`)
+    if (!VIDEO_EXTENSIONS.has(ext)) {
+      data.resume() // opróżnij strumień, żeby żądanie się zakończyło
+      // statusCode trafia do odpowiedzi HTTP (415 Unsupported Media Type).
+      throw Object.assign(new Error(`Nieobsługiwany format: ${ext || 'brak rozszerzenia'}`), {
+        statusCode: 415
+      })
+    }
     const stem = clean.slice(0, clean.length - ext.length)
     let target = clean
     for (let i = 1; existsSync(join(this.dir, target)); i++) target = `${stem} (${i})${ext}`

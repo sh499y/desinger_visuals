@@ -68,3 +68,64 @@ describe('lfoShape', () => {
     expect(lfoShape(3, 0.75)).toBe(0)
   })
 })
+
+describe('SignalBus – LFO, Math i wartości domyślne', () => {
+  const withNodes = (...nodes: GraphNode[]): Graph => {
+    const g = defaultGraph()
+    return { ...g, nodes: [...g.nodes, ...nodes] }
+  }
+
+  it('LFO przesuwa fazę z czasem i podaje wartość na kabel', () => {
+    let g = withNodes({ id: 'lfo1', type: 'LFO', params: { rate: 1, shape: 2 } })
+    g = connect(g, { from: 'lfo1.value', to: 'vignette1.darkness' })
+    const b = new SignalBus(compileGraph(g), nodesOf(g))
+    b.evaluate(audio, 0.25)
+    expect(b.values.get('lfo1.value')).toBeCloseTo(0.25) // piła: wartość = faza
+    b.evaluate(audio, 0.5)
+    expect(b.values.get('lfo1.value')).toBeCloseTo(0.75)
+    b.evaluate(audio, 0.5)
+    expect(b.values.get('lfo1.value')).toBeCloseTo(0.25) // faza zawija się po 1
+    expect(b.number('vignette1', 'darkness')).toBeCloseTo(0.25)
+  })
+
+  it('LFO z kablem na częstotliwość (rate sterowane audio)', () => {
+    let g = withNodes({ id: 'lfo1', type: 'LFO', params: { rate: 0.01, shape: 2 } })
+    g = connect(g, { from: 'a1.beat', to: 'lfo1.rate', scale: 2 })
+    const b = new SignalBus(compileGraph(g), nodesOf(g))
+    b.evaluate(audio, 0.1) // beat = 1 → rate = 2 Hz
+    expect(b.values.get('lfo1.value')).toBeCloseTo(0.2)
+  })
+
+  it('Math bez wejścia liczy z zera, a odwrócone min/max nie psują wyniku', () => {
+    const g = withNodes({
+      id: 'm1',
+      type: 'Math',
+      params: { ...defaultParams('Math'), offset: 0.7, min: 1, max: 0 }
+    })
+    expect(bus(g).values.get('m1.out')).toBeCloseTo(0.7)
+  })
+
+  it('number: brak wartości → domyślna z definicji, nieznany node → 0', () => {
+    const g = updateNode(defaultGraph(), 'bloom1', { params: {} })
+    const b = bus(g)
+    expect(b.number('bloom1', 'threshold')).toBe(0.4)
+    expect(b.number('ghost', 'x')).toBe(0)
+  })
+
+  it('setGraph podmienia graf bez gubienia fazy LFO', () => {
+    const g = withNodes({ id: 'lfo1', type: 'LFO', params: { rate: 1, shape: 2 } })
+    const b = new SignalBus(compileGraph(g), nodesOf(g))
+    b.evaluate(audio, 0.3)
+    b.setGraph(compileGraph(g), nodesOf(g))
+    b.evaluate(audio, 0.3)
+    expect(b.values.get('lfo1.value')).toBeCloseTo(0.6)
+  })
+
+  it('compileGraph: źródło, wyjście i kolejność sterowania', () => {
+    const c = compileGraph(withNodes({ id: 'lfo1', type: 'LFO', params: {} }))
+    expect(c.sourceId).toBe('v1')
+    expect(c.outputId).toBe('out')
+    expect(c.controlIds).toEqual(['a1', 'lfo1'])
+    expect([...c.bindings.keys()]).toEqual(['bloom1.intensity', 'rgbsplit1.amount'])
+  })
+})
