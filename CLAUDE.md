@@ -81,4 +81,5 @@ Testy jednostkowe (Vitest) leżą obok kodu jako `*.test.ts`. Domyślne środowi
 
 - Chromium na Linuksie nie widzi źródeł „Monitor of …”. Dlatego `loopback.ts` tworzy `module-remap-source` (`visualizer_loopback`).
 - `/media/:id` zwraca nagłówek CORS tylko z kluczem `?k=` z `FrontInit.mediaKey`. Bez niego tekstura WebGL z innego originu zostanie zablokowana.
+- Panel ma własny cache Vite (`cacheDir: node_modules/.vite-panel`). Bez tego dwa serwery dev (okno :5173 i panel :5174) nadpisują sobie `node_modules/.vite/deps`, panel dostaje 504 „Outdated Optimize Dep” i jest pustą stroną.
 - Pusty POST z `content-type: application/json` Fastify odrzuci. Przy POST bez treści nie ustawiaj tego nagłówka.

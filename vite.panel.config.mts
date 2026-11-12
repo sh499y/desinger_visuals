@@ -10,6 +10,9 @@ const backend = 'http://127.0.0.1:4000'
 export default defineConfig({
   root: resolve('src/panel'),
   base: './',
+  // Osobny cache zależności: przy `npm run dev` drugi serwer Vite (okno, :5173) używa
+  // node_modules/.vite i nadpisywałby paczki panelu → 504 „Outdated Optimize Dep” i pusta strona.
+  cacheDir: resolve('node_modules/.vite-panel'),
   resolve: {
     alias: {
       '@shared': resolve('src/shared'),

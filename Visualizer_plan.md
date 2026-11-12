@@ -1,3 +1,4 @@
+
 # 🎛️ Visualizer: stack i zarys aplikacji (Linux)
 
 Nov 7, 2026 · @Shaggy
