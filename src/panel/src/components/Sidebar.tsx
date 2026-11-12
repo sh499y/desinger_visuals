@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ProjectInfo } from '@shared/types'
 import { api, postJson, url } from '../api'
-import { createLoopback, setAudioDevice, setFullscreen, usePanel } from '../store'
+import { TEMPLATES } from '@shared/templates'
+import { commitGraph, createLoopback, setAudioDevice, setFullscreen, usePanel } from '../store'
 import { Button, Section, selectClass } from './ui'
 
 export function Preview(): React.JSX.Element {
@@ -295,6 +296,27 @@ export function ProjectsPanel(): React.JSX.Element {
           <li className="text-xs text-neutral-500">Brak zapisanych projektów.</li>
         )}
       </ul>
+    </Section>
+  )
+}
+
+export function TemplatesPanel(): React.JSX.Element {
+  return (
+    <Section title="Szablony">
+      <div className="grid grid-cols-2 gap-1.5">
+        {TEMPLATES.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            title={t.description}
+            className="rounded border border-neutral-700 bg-neutral-950 px-2 py-2 text-left text-xs hover:border-violet-500 hover:bg-neutral-900"
+            onClick={() => commitGraph(structuredClone(t.graph))}
+          >
+            <div className="font-medium text-neutral-100">{t.name}</div>
+            <div className="mt-0.5 text-[10px] leading-tight text-neutral-500">{t.description}</div>
+          </button>
+        ))}
+      </div>
     </Section>
   )
 }

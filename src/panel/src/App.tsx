@@ -1,7 +1,13 @@
 import { EffectsView } from './components/EffectsView'
 import { Library } from './components/Library'
 import { NodeEditor } from './components/NodeEditor'
-import { AudioPanel, OutputPanel, Preview, ProjectsPanel } from './components/Sidebar'
+import {
+  AudioPanel,
+  OutputPanel,
+  Preview,
+  ProjectsPanel,
+  TemplatesPanel
+} from './components/Sidebar'
 import { setLan, setTab, usePanel, type Tab } from './store'
 
 const TABS: { id: Tab; label: string }[] = [
@@ -90,6 +96,7 @@ function App(): React.JSX.Element {
 
         <div className="shrink-0 space-y-3 lg:w-80 lg:overflow-y-auto">
           <Preview />
+          <TemplatesPanel />
           <AudioPanel />
           <OutputPanel />
           <ProjectsPanel />
