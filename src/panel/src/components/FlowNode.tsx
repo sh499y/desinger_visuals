@@ -2,11 +2,16 @@
 // Ciągły kabel = obraz, kropkowany = sygnał (audio, LFO, Math);
 // pełny kwadrat = obraz, pusty = sygnał (ramka w kolorze pasma audio).
 
+import { GRADIENT_PRESETS } from '@shared/gradient'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import { NODE_DEFS, VIDEO_IN, VIDEO_OUT } from '@shared/nodes'
 import type { GraphNode } from '@shared/types'
 import { CATEGORY_TAG, lineVar, portColor } from '../palette'
 import { usePanel } from '../store'
+import { CrtNode } from './crt/CrtNode'
+import { DreamerNode } from './dreamer/DreamerNode'
+import { isDreamerType } from './dreamer/dreamerTypes'
+import { isCrtType } from './crt/knobMath'
 
 export type VzNode = Node<{ node: GraphNode }, 'vz'>
 
@@ -63,11 +68,22 @@ function format(v: unknown): string {
     return Number.isInteger(v) ? String(v) : v.toFixed(Math.abs(v) < 0.1 ? 4 : 2)
   if (typeof v === 'boolean') return v ? 'tak' : 'nie'
   if (v === null) return 'aktywne'
+  if (typeof v === 'string' && v.includes(':'))
+    return GRADIENT_PRESETS.find((p) => p.value === v)?.name ?? 'własny'
   return String(v).slice(0, 10)
 }
 
 export function FlowNode({ data, selected }: NodeProps<VzNode>): React.JSX.Element {
-  const node = data.node
+  if (isDreamerType(data.node.type)) {
+    return <DreamerNode node={data.node} selected={selected} />
+  }
+  if (isCrtType(data.node.type)) {
+    return <CrtNode node={data.node} selected={selected} />
+  }
+  return <ListNode node={data.node} selected={selected} />
+}
+
+function ListNode({ node, selected }: { node: GraphNode; selected: boolean }): React.JSX.Element {
   const def = NODE_DEFS[node.type]
   const deleteMode = usePanel((s) => s.graphMode === 'delete')
   const frame = deleteMode

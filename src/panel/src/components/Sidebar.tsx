@@ -7,7 +7,7 @@ import { TEMPLATES } from '@shared/templates'
 import { asciiBar } from '../ascii'
 import { termVar, type TermColor } from '../palette'
 import { commitGraph, createLoopback, setAudioDevice, setFullscreen, usePanel } from '../store'
-import { AsciiBox, Button, Section, Tag, selectClass } from './ui'
+import { AsciiBox, Button, ConfirmButton, Section, Tag, selectClass } from './ui'
 
 export function Preview(): React.JSX.Element {
   const [on, setOn] = useState(true)
@@ -313,22 +313,18 @@ export function ProjectsPanel({
             >
               ↓
             </a>
-            <Button
-              variant="link"
-              className="btn-danger"
+            <ConfirmButton
               title="Usuń projekt"
-              onClick={() => {
-                if (confirm(`Usunąć projekt „${p.name}”?`)) {
-                  void run(() =>
-                    api<ProjectInfo[]>(`/api/projects/${encodeURIComponent(p.name)}`, {
-                      method: 'DELETE'
-                    })
-                  )
-                }
-              }}
+              onConfirm={() =>
+                void run(() =>
+                  api<ProjectInfo[]>(`/api/projects/${encodeURIComponent(p.name)}`, {
+                    method: 'DELETE'
+                  })
+                )
+              }
             >
               ×
-            </Button>
+            </ConfirmButton>
           </li>
         ))}
       </ul>

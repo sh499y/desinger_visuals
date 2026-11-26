@@ -116,5 +116,30 @@ export const TEMPLATES: GraphTemplate[] = [
         { from: 'a1.mid', to: 'vignette1.darkness', scale: 0.4, offset: 0.3 }
       ]
     )
+  },
+  {
+    id: 'strobe-pattern',
+    name: 'Strobe Pattern',
+    description:
+      'Stroboskop niezależny od beatu: na zmianę szybka seria (~11/s) i wolne błyski (~1/s), czasem białe klatki.',
+    graph: make(
+      [
+        n('v1', 'VideoFile', 0, 0),
+        n('circuit1', 'CRTCircuit', 240, 0),
+        n('tube1', 'CRTTube', 540, 0),
+        n('flicker1', 'CRTFlicker', 840, 0, { amount: 1 }),
+        n('out', 'Output', 1140, 0),
+        // prostokąt 0,35 Hz: ~1,4 s szybko, ~1,4 s wolno
+        n('lfo1', 'LFO', 540, 300, { rate: 0.35, shape: 3 }),
+        // wolny sinus: co jakiś czas wplata białe klatki między czarne
+        n('lfo2', 'LFO', 840, 300, { rate: 0.09 })
+      ],
+      [
+        ...chain('v1', 'circuit1', 'tube1', 'flicker1', 'out'),
+        // Rate 0,2 (≈1 błysk/s) ↔ 0,85 (≈11 błysków/s)
+        { from: 'lfo1.value', to: 'flicker1.rate', scale: 0.65, offset: 0.2 },
+        { from: 'lfo2.value', to: 'flicker1.tone', scale: 0.6, offset: 0 }
+      ]
+    )
   }
 ]

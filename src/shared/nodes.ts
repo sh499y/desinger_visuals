@@ -11,9 +11,22 @@ export type NodeType =
   | 'Glitch'
   | 'Noise'
   | 'Vignette'
+  | 'Mirror'
+  | 'PosterizeTime'
+  | 'CRTGuns'
+  | 'CRTCircuit'
+  | 'CRTEcho'
+  | 'CRTSignal'
+  | 'CRTTube'
+  | 'CRTFlicker'
+  | 'DreamerBlur'
+  | 'DreamerGrain'
+  | 'DreamerGradient'
   | 'AudioIn'
   | 'LFO'
   | 'Math'
+  | 'Smooth'
+  | 'MPC'
   | 'Output'
 
 export type NodeCategory = 'source' | 'filter' | 'control' | 'output'
@@ -48,7 +61,14 @@ export interface SelectParamDef extends BaseParam {
   default: number
 }
 
-export type ParamDef = NumberParamDef | BooleanParamDef | VideoParamDef | SelectParamDef
+/** Gradient mapy kolorów jako tekst (format w `gradient.ts`). */
+export interface GradientParamDef extends BaseParam {
+  kind: 'gradient'
+  default: string
+}
+
+export type ParamDef =
+  NumberParamDef | BooleanParamDef | VideoParamDef | SelectParamDef | GradientParamDef
 
 export interface NodeDef {
   type: NodeType
@@ -64,6 +84,8 @@ export interface NodeDef {
   signalOut: string[]
   params: ParamDef[]
 }
+
+import { presetValue } from './gradient'
 
 export const VIDEO_IN = 'input'
 export const VIDEO_OUT = 'video'
@@ -128,6 +150,103 @@ export const NODE_DEFS: Record<NodeType, NodeDef> = {
     num('offset', 'Rozmiar', 0, 1, 0.01, 0.35),
     num('darkness', 'Ciemność', 0, 1, 0.01, 0.6)
   ]),
+  PosterizeTime: filter('PosterizeTime', 'Posterize Time', [
+    num('fps', 'Klatki na sekundę', 1, 30, 1, 12)
+  ]),
+  Mirror: filter('Mirror', 'Mirror', [
+    num('angle', 'Kąt osi odbicia (°)', 0, 360, 1, 90),
+    num('offset', 'Odległość osi od środka', -0.5, 0.5, 0.005, 0),
+    num('softness', 'Miękkość krawędzi', 0, 0.3, 0.005, 0.06)
+  ]),
+  CRTGuns: filter('CRTGuns', 'CRT Guns', [
+    num('red', 'Działo R', 0, 1, 0.005, 0.5),
+    num('green', 'Działo G', 0, 1, 0.005, 0.5),
+    num('blue', 'Działo B', 0, 1, 0.005, 0.5)
+  ]),
+  CRTEcho: filter('CRTEcho', 'CRT Echo', [
+    num('echo', 'Echo (odbicia)', 0, 1, 0.005, 0),
+    num('delay', 'Opóźnienie echa', 0, 1, 0.005, 0),
+    num('spread', 'Rozjazd kolorów', 0, 1, 0.005, 0)
+  ]),
+  CRTSignal: filter('CRTSignal', 'CRT Signal', [
+    num('hum', 'Przydźwięk 50 Hz', 0, 1, 0.005, 0),
+    num('jitter', 'Szarpanie linii', 0, 1, 0.005, 0),
+    num('chroma', 'Rozlewanie koloru', 0, 1, 0.005, 0)
+  ]),
+  CRTCircuit: filter('CRTCircuit', 'CRT Circuit', [
+    num('hv', 'Anoda HV', 0, 1, 0.005, 0.5),
+    num('hdef', 'Odchylanie H', 0, 1, 0.005, 0.5),
+    num('vdef', 'Odchylanie V', 0, 1, 0.005, 0.5)
+  ]),
+  CRTTube: filter('CRTTube', 'CRT Tube', [
+    num('glow', 'Halacja (poświata szkła)', 0, 1, 0.005, 0.3),
+    num('contrast', 'Krzywa kineskopu', 0, 1, 0.005, 0.5),
+    num('color', 'Nasycenie luminoforów', 0, 1, 0.005, 0.5)
+  ]),
+  CRTFlicker: filter('CRTFlicker', 'CRT Flicker', [
+    num('amount', 'Siła błysku', 0, 1, 0.005, 0),
+    num('rate', 'Błyski na sekundę (0,5–20)', 0, 1, 0.005, 0.5),
+    num('tone', 'Kolor: czarne → białe', 0, 1, 0.005, 0)
+  ]),
+  DreamerBlur: filter('DreamerBlur', 'Dreamer Blur', [
+    {
+      key: 'kind',
+      label: 'Rodzaj',
+      kind: 'select',
+      default: 0,
+      options: [
+        { value: 0, label: 'Gaussian' },
+        { value: 1, label: 'Motion' },
+        { value: 2, label: 'Spin' },
+        { value: 3, label: 'Zoom' },
+        { value: 4, label: 'Band' },
+        { value: 5, label: 'Ellipse' }
+      ]
+    },
+    num('amount', 'Siła', 0, 100, 1, 40),
+    num('angle', 'Kąt (Motion, Band, Ellipse) °', 0, 360, 1, 0),
+    num('centerX', 'Środek X', 0, 1, 0.005, 0.5),
+    num('centerY', 'Środek Y', 0, 1, 0.005, 0.5),
+    num('focus', 'Ostry obszar (Band, Ellipse)', 0, 1, 0.005, 0.3),
+    num('feather', 'Miękkość przejścia', 0, 1, 0.005, 0.5)
+  ]),
+  DreamerGrain: filter('DreamerGrain', 'Dreamer Ziarno', [
+    {
+      key: 'kind',
+      label: 'Rodzaj',
+      kind: 'select',
+      default: 0,
+      options: [
+        { value: 0, label: 'Crystal' },
+        { value: 1, label: 'Clumps' },
+        { value: 2, label: 'Raw' },
+        { value: 3, label: 'Fine' },
+        { value: 4, label: 'Sand' },
+        { value: 5, label: 'Clouds' },
+        { value: 6, label: 'Cells' },
+        { value: 7, label: 'Streaks' },
+        { value: 8, label: 'Silver' },
+        { value: 9, label: 'Halftone' },
+        { value: 10, label: 'Dither' }
+      ]
+    },
+    num('amount', 'Siła', 0, 100, 1, 30),
+    num('size', 'Rozmiar ziarna', 0, 100, 1, 20),
+    num('softness', 'Miękkość', 0, 100, 1, 0),
+    num('shadows', 'W cieniach', 0, 200, 1, 100),
+    num('highlights', 'W światłach', 0, 200, 1, 100),
+    num('motion', 'Ruch wzoru', 0, 1, 0.01, 0.5)
+  ]),
+  DreamerGradient: filter('DreamerGradient', 'Dreamer Gradient', [
+    { key: 'a', label: 'Gradient A', kind: 'gradient', default: presetValue('Heat') },
+    { key: 'b', label: 'Gradient B', kind: 'gradient', default: presetValue('Violet') },
+    num('mix', 'Mieszanie A↔B', 0, 1, 0.005, 0),
+    num('shift', 'Przesunięcie mapy', -1, 1, 0.005, 0),
+    num('contrast', 'Kontrast mapy', -1, 1, 0.005, 0),
+    num('steps', 'Schodki', 0, 16, 1, 0),
+    { key: 'reverse', label: 'Odwróć', kind: 'boolean', default: false },
+    num('opacity', 'Krycie', 0, 100, 1, 100)
+  ]),
   AudioIn: {
     type: 'AudioIn',
     label: 'Audio',
@@ -177,6 +296,42 @@ export const NODE_DEFS: Record<NodeType, NodeDef> = {
       num('max', 'Max', -10, 10, 0.01, 1)
     ]
   },
+  Smooth: {
+    type: 'Smooth',
+    label: 'Wygładzanie',
+    category: 'control',
+    videoIn: false,
+    videoOut: false,
+    signalIn: ['in'],
+    signalOut: ['out'],
+    params: [
+      num('attack', 'Atak (ms)', 0, 2000, 1, 30),
+      num('release', 'Zwolnienie (ms)', 0, 5000, 1, 400)
+    ]
+  },
+  MPC: {
+    type: 'MPC',
+    label: 'MPC',
+    category: 'control',
+    videoIn: false,
+    videoOut: false,
+    signalIn: [],
+    signalOut: ['hit', 'held', 'last'],
+    params: [
+      {
+        key: 'pad',
+        label: 'Pad',
+        kind: 'select',
+        default: 0,
+        options: [
+          { value: 0, label: 'Wszystkie' },
+          ...Array.from({ length: 16 }, (_, i) => ({ value: i + 1, label: `Pad ${i + 1}` }))
+        ]
+      },
+      num('decay', 'Wygasanie (s)', 0.05, 3, 0.05, 0.4),
+      num('gain', 'Wzmocnienie', 0, 4, 0.05, 1)
+    ]
+  },
   Output: {
     type: 'Output',
     label: 'Wyjście',
@@ -205,8 +360,8 @@ export function findNumberParam(type: NodeType, key: string): NumberParamDef | u
   return p?.kind === 'number' ? p : undefined
 }
 
-export function defaultParams(type: NodeType): Record<string, number | boolean | null> {
-  const out: Record<string, number | boolean | null> = {}
+export function defaultParams(type: NodeType): Record<string, number | boolean | string | null> {
+  const out: Record<string, number | boolean | string | null> = {}
   for (const p of NODE_DEFS[type].params) out[p.key] = p.default
   return out
 }

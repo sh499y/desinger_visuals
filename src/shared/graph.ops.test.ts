@@ -158,6 +158,21 @@ describe('łańcuch – przypadki brzegowe', () => {
 })
 
 describe('sanitizeGraph – dodatkowe przypadki', () => {
+  it('uszkodzony gradient w projekcie wraca do domyślnego, reszta zostaje', () => {
+    const g = sanitizeGraph({
+      nodes: [
+        {
+          id: 'g',
+          type: 'DreamerGradient',
+          params: { a: 'zzz', b: '0:000000;'.repeat(500), mix: 0.4 }
+        }
+      ],
+      edges: []
+    })
+    const def = defaultParams('DreamerGradient')
+    expect(byId(g, 'g').params).toMatchObject({ a: def.a, b: def.b, mix: 0.4 })
+  })
+
   it('zachowuje bypass i pozycję, pomija duplikaty id', () => {
     const g = sanitizeGraph({
       nodes: [
@@ -195,5 +210,12 @@ describe('sanitizeGraph – dodatkowe przypadki', () => {
     expect(sanitizeParam('VideoFile', 'videoId', 'x'.repeat(65))).toBeUndefined()
     expect(sanitizeParam('VideoFile', 'videoId', null)).toBeNull()
     expect(sanitizeParam('Bloom', 'ghost', 1)).toBeUndefined()
+  })
+
+  it('sanitizeParam dla gradientu normalizuje poprawny i odrzuca zły', () => {
+    expect(sanitizeParam('DreamerGradient', 'a', '1:FFFFFF;0:000000')).toBe('0:000000;1:ffffff')
+    expect(sanitizeParam('DreamerGradient', 'a', 'zzz')).toBeUndefined()
+    expect(sanitizeParam('DreamerGradient', 'a', 0.5)).toBeUndefined()
+    expect(sanitizeParam('DreamerGradient', 'a', '0:000000;'.repeat(50))).toBeUndefined()
   })
 })

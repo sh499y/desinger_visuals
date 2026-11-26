@@ -103,6 +103,17 @@ describe('sanitizeGraph', () => {
     expect(g.edges).toEqual([])
   })
 
+  it('przyjmuje node MPC i poprawia wartości spoza zakresu', () => {
+    const g = sanitizeGraph({
+      nodes: [{ id: 'm', type: 'MPC', params: { pad: 99, decay: 10, gain: 2 } }],
+      edges: []
+    })
+    expect(g.nodes[0].type).toBe('MPC')
+    expect(g.nodes[0].params.pad).toBe(0)
+    expect(g.nodes[0].params.decay).toBe(3)
+    expect(g.nodes[0].params.gain).toBe(2)
+  })
+
   it('zwraca domyślny graf dla złego wejścia', () => {
     expect(sanitizeGraph(null)).toEqual(defaultGraph())
   })

@@ -22,9 +22,10 @@ export const BAND_COLORS: Readonly<Record<string, TermColor>> = {
   beat: 'magenta'
 }
 
-/** Kolor wyjścia sygnału `port` node'a typu `type`: pasmo audio albo niebieski (LFO, Math, inne). */
+/** Kolor wyjścia sygnału `port` node'a typu `type`: pasmo audio, zielony dla MPC, inaczej niebieski. */
 export function portColor(type: NodeType | undefined, port: string): TermColor {
   if (type === 'AudioIn') return BAND_COLORS[port] ?? 'white'
+  if (type === 'MPC') return 'green'
   return 'blue'
 }
 

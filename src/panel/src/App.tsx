@@ -10,7 +10,7 @@ import {
   TemplatesPanel
 } from './components/Sidebar'
 import { Tag } from './components/ui'
-import { setLan, setTab, usePanel, type Tab } from './store'
+import { redo, setLan, setTab, undo, usePanel, type Tab } from './store'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'effects', label: 'Efekty' },
@@ -159,8 +159,33 @@ function GraphLayout(): React.JSX.Element {
   )
 }
 
+/**
+ * Ctrl/Cmd+Z cofa zmianę grafu, Shift+Ctrl/Cmd+Z (albo Ctrl+Y) ją ponawia.
+ * W polach tekstowych zostaje zwykłe cofanie tekstu.
+ */
+function useUndoKeys(): void {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return
+      const t = e.target as HTMLElement | null
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) {
+        const range = t.tagName === 'INPUT' && (t as HTMLInputElement).type === 'range'
+        if (!range) return
+      }
+      const key = e.key.toLowerCase()
+      if (key === 'z' && !e.shiftKey) undo()
+      else if ((key === 'z' && e.shiftKey) || key === 'y') redo()
+      else return
+      e.preventDefault()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+}
+
 function Workspace(): React.JSX.Element {
   const tab = usePanel((s) => s.tab)
+  useUndoKeys()
   return (
     <div className="flex h-full flex-col">
       <div className="px-3 pt-3">

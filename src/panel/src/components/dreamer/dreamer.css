@@ -1,0 +1,273 @@
+/* Node'y Dreamera: różowe anodyzowane aluminium (szczotkowane, z odblaskiem),
+   różowo-chromowe pokrętła i listwa z gradientem noda. Budowa jak skórka CRT „hammertone”. */
+
+.dr-node {
+  --dr-ink: #4a1028;
+  --dr-ink-soft: #7a2f52;
+  --tick: #8a3a5e;
+}
+
+.dr-body {
+  padding: 10px;
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 70% at 18% 0%, rgba(255, 255, 255, 0.55), transparent 55%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.09) 0 1px, transparent 1px 3px),
+    linear-gradient(160deg, #f9cfe0 0%, #e48fb0 38%, #f6c3d7 62%, #c96d93 100%);
+  box-shadow:
+    0 10px 24px rgba(60, 0, 30, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -2px 3px rgba(110, 20, 60, 0.35);
+}
+
+.dr-plate {
+  padding: 16px 4px 8px;
+  border-radius: 8px;
+  color: var(--dr-ink);
+  background:
+    radial-gradient(90% 60% at 80% 0%, rgba(255, 255, 255, 0.5), transparent 60%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 2px),
+    linear-gradient(#fde6ef, #efb3cb 55%, #f8d3e2);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -1px 0 rgba(120, 30, 70, 0.35);
+}
+
+.dr-row {
+  display: flex;
+  justify-content: space-around;
+}
+
+/* Pokrętła: różowy chrom zamiast stali. */
+.dr-node .crt-knob-skirt {
+  background: conic-gradient(#ffe3ee, #c86a91, #fff4f8, #b65a80, #ffd6e6, #d27ba0, #ffe3ee);
+  box-shadow:
+    0 4px 7px rgba(80, 0, 40, 0.5),
+    0 1px 0 rgba(255, 255, 255, 0.5) inset;
+}
+.dr-node .crt-knob-cap {
+  background:
+    radial-gradient(circle at 40% 30%, rgba(255, 255, 255, 0.35), transparent 55%),
+    repeating-conic-gradient(#5a1636 0 5deg, #7d2a51 5deg 10deg);
+  box-shadow: 0 0 0 1px #3a0a20;
+}
+.dr-node .crt-knob-cap::after {
+  background: #ffe3ee;
+}
+.dr-node .crt-klab {
+  color: var(--dr-ink);
+}
+.dr-node .crt-modread {
+  color: #8b1d55;
+}
+.dr-node .crt-pin {
+  background: #c99aae;
+}
+
+/* Jacki i uchwyty: różowy chrom. */
+.dr-node .react-flow__handle.crt-jack {
+  background: radial-gradient(
+    circle,
+    #2a0616 30%,
+    #ffd9e8 34%,
+    #c06a90 58%,
+    #ffe6f0 62%,
+    #9c4a6f 100%
+  );
+}
+.dr-node .react-flow__handle.crt-video {
+  border-color: #4a1028;
+  background: #ff9cc6;
+}
+.dr-node .react-flow__handle.dr-signal {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #4a1028;
+  background: #22d3ee;
+}
+
+/* Przełączniki: rodzaj (lista) i wartości tak/nie. */
+.dr-switches {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin: -6px 4px 12px;
+}
+.dr-select,
+.dr-toggle,
+.dr-grad-tools button {
+  padding: 2px 8px;
+  border: 1px solid rgba(74, 16, 40, 0.45);
+  border-radius: 999px;
+  font:
+    700 9px/1.4 'Avenir Next',
+    'Helvetica Neue',
+    sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--dr-ink);
+  background: linear-gradient(#fff3f8, #f3bfd4);
+  box-shadow:
+    0 1px 2px rgba(80, 0, 40, 0.3),
+    inset 0 1px 0 #fff;
+  cursor: pointer;
+}
+.dr-toggle.dr-on,
+.dr-grad-tools button.dr-on {
+  color: #fff;
+  background: linear-gradient(#ff7fb6, #d6347a);
+}
+.dr-grad-tools button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Gradient A / B. */
+.dr-grad {
+  margin: 12px 6px 0;
+}
+.dr-grad-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 20px;
+  margin-bottom: 4px;
+}
+.dr-grad-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+.dr-grad-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.dr-grad-tools input[type='color'] {
+  width: 22px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid rgba(74, 16, 40, 0.45);
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+}
+.dr-grad-bar {
+  position: relative;
+  height: 18px;
+  border-radius: 4px;
+  box-shadow:
+    inset 0 0 0 1px rgba(74, 16, 40, 0.5),
+    0 1px 0 rgba(255, 255, 255, 0.7);
+  cursor: copy;
+}
+.dr-stop {
+  position: absolute;
+  bottom: -7px;
+  width: 11px;
+  height: 11px;
+  margin-left: -5.5px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #4a1028;
+  cursor: ew-resize;
+}
+.dr-stop.dr-hard {
+  border-radius: 2px;
+}
+.dr-stop.dr-on {
+  box-shadow:
+    0 0 0 1px #4a1028,
+    0 0 0 3px #ff5fa2;
+}
+.dr-presets {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 3px;
+  margin-top: 13px;
+}
+.dr-preset {
+  height: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(74, 16, 40, 0.4);
+  cursor: pointer;
+}
+.dr-preset.dr-on {
+  box-shadow:
+    inset 0 0 0 1px rgba(74, 16, 40, 0.4),
+    0 0 0 2px #ff5fa2;
+}
+
+/* Listwa z nazwą: gradient noda wtopiony w metal. */
+.dr-foot-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 2px 0;
+}
+.dr-strip {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding: 6px 9px;
+  overflow: hidden;
+  border-radius: 6px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 2px rgba(60, 0, 30, 0.5),
+    0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.dr-strip::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 3px),
+    linear-gradient(rgba(255, 255, 255, 0.45), transparent 50%, rgba(0, 0, 0, 0.15));
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+.dr-name {
+  position: relative;
+  font:
+    800 12px/1 'Avenir Next',
+    'Futura',
+    sans-serif;
+  letter-spacing: 0.5px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(40, 0, 20, 0.7);
+}
+.dr-sub {
+  position: relative;
+  margin-top: 3px;
+  overflow: hidden;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 1px rgba(40, 0, 20, 0.6);
+}
+.dr-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dr-status.crt-on {
+  background: #ff5fa2;
+  box-shadow: 0 0 7px #ff5fa2;
+}
+.dr-footswitch {
+  background: radial-gradient(circle at 40% 35%, #fff, #e8a3c2 55%, #a8507a);
+  box-shadow:
+    0 0 0 3px #f0b9d0,
+    0 0 0 4px #7d2a51,
+    0 3px 5px rgba(80, 0, 40, 0.6);
+}

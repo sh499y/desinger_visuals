@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { connect, defaultGraph, updateNode } from '@shared/graph'
 import { defaultParams } from '@shared/nodes'
 import type { Graph, GraphNode } from '@shared/types'
-import { SignalBus, compileGraph, lfoShape } from './graph'
+import { SignalBus, compileGraph, lfoShape, smoothStep } from './graph'
+import { MidiState } from './midi/state'
 
 const audio = { bass: 0.5, mid: 0.2, high: 0.1, level: 0.3, beat: 1 }
 const nodesOf = (g: Graph): Map<string, GraphNode> => new Map(g.nodes.map((n) => [n.id, n]))
@@ -127,5 +128,150 @@ describe('SignalBus – LFO, Math i wartości domyślne', () => {
     expect(c.outputId).toBe('out')
     expect(c.controlIds).toEqual(['a1', 'lfo1'])
     expect([...c.bindings.keys()]).toEqual(['bloom1.intensity', 'rgbsplit1.amount'])
+  })
+})
+
+describe('smoothStep', () => {
+  it('atak i zwolnienie to stałe czasowe w ms', () => {
+    expect(smoothStep(0, 1, 0.03, 30, 400)).toBeCloseTo(1 - Math.exp(-1), 6)
+    expect(smoothStep(1, 0, 0.4, 30, 400)).toBeCloseTo(Math.exp(-1), 6)
+  })
+
+  it('0 ms przepuszcza, dt 0 stoi, długie dt nie przestrzeliwuje', () => {
+    expect(smoothStep(0.2, 0.9, 1 / 60, 0, 400)).toBe(0.9)
+    expect(smoothStep(0.2, 0.9, 0, 30, 400)).toBe(0.2)
+    const v = smoothStep(0.2, 0.9, 0.1, 1, 400)
+    expect(v).toBeLessThanOrEqual(0.9)
+    expect(v).toBeCloseTo(0.9, 6)
+    for (const dt of [0, 1e-4, 1 / 60, 0.1, 5]) {
+      const w = smoothStep(0.9, 0.2, dt, 30, 400)
+      expect(w).toBeGreaterThanOrEqual(0.2)
+      expect(w).toBeLessThanOrEqual(0.9)
+    }
+  })
+})
+
+describe('SignalBus – Wygładzanie', () => {
+  it('stały sygnał narasta płynnie od 0 do wejścia', () => {
+    const base = defaultGraph()
+    let g: Graph = {
+      ...base,
+      nodes: [...base.nodes, { id: 's1', type: 'Smooth', params: defaultParams('Smooth') }]
+    }
+    g = connect(g, { from: 'a1.level', to: 's1.in' })
+    const b = new SignalBus(compileGraph(g), nodesOf(g))
+    const full = { ...audio, level: 1 }
+    const seen: number[] = []
+    for (let i = 0; i < 60; i++) {
+      b.evaluate(full, 1 / 60)
+      seen.push(b.values.get('s1.out')!)
+    }
+    expect(seen[0]).toBeGreaterThan(0)
+    expect(seen[0]).toBeLessThan(1)
+    for (let i = 1; i < seen.length; i++) expect(seen[i]).toBeGreaterThanOrEqual(seen[i - 1])
+    expect(seen[59]).toBeCloseTo(1, 3)
+  })
+})
+
+describe('SignalBus – MPC', () => {
+  const mpc = (id: string, params: Record<string, number> = {}): GraphNode => ({
+    id,
+    type: 'MPC',
+    params: { ...defaultParams('MPC'), ...params }
+  })
+  const withNodes = (...nodes: GraphNode[]): Graph => {
+    const g = defaultGraph()
+    return { ...g, nodes: [...g.nodes, ...nodes] }
+  }
+  const setup = (...nodes: GraphNode[]): { b: SignalBus; midi: MidiState; g: Graph } => {
+    const g = withNodes(...nodes)
+    const b = new SignalBus(compileGraph(g), nodesOf(g))
+    const midi = new MidiState()
+    b.evaluate(audio, 1 / 60, midi)
+    return { b, midi, g }
+  }
+
+  it('bez MIDI daje zera', () => {
+    const g = withNodes(mpc('p1'))
+    const b = new SignalBus(compileGraph(g), nodesOf(g))
+    b.evaluate(audio, 1 / 60)
+    expect(b.values.get('p1.hit')).toBe(0)
+    expect(b.values.get('p1.held')).toBe(0)
+    expect(b.values.get('p1.last')).toBe(0)
+  })
+
+  it('uderzenie daje hit, held i numer padu', () => {
+    const { b, midi } = setup(mpc('p1'))
+    midi.handle([0x90, 36, 127])
+    b.evaluate(audio, 1 / 60, midi)
+    expect(b.values.get('p1.hit')).toBeCloseTo(1)
+    expect(b.values.get('p1.held')).toBeCloseTo(1)
+    expect(b.values.get('p1.last')).toBe(0)
+  })
+
+  it('hit wygasa do ok. 1% po czasie decay', () => {
+    const { b, midi } = setup(mpc('p1', { decay: 0.4 }))
+    midi.handle([0x90, 36, 127])
+    b.evaluate(audio, 0, midi)
+    b.evaluate(audio, 0.4, midi)
+    const hit = b.values.get('p1.hit') ?? -1
+    expect(hit).toBeGreaterThan(0)
+    expect(hit).toBeLessThan(0.011)
+  })
+
+  it('gain wzmacnia hit z obcięciem do 1', () => {
+    const { b, midi } = setup(mpc('p1', { gain: 2 }))
+    midi.handle([0x90, 36, 64])
+    b.evaluate(audio, 0, midi)
+    expect(b.values.get('p1.hit')).toBeCloseTo(Math.min(1, (2 * 64) / 127))
+  })
+
+  it('node z wybranym padem reaguje tylko na swój pad', () => {
+    const { b, midi } = setup(mpc('a', { pad: 1 }), mpc('b', { pad: 2 }))
+    midi.handle([0x90, 37, 100])
+    b.evaluate(audio, 1 / 60, midi)
+    expect(b.values.get('a.hit')).toBe(0)
+    expect(b.values.get('a.held')).toBe(0)
+    expect(b.values.get('b.hit')).toBeGreaterThan(0)
+  })
+
+  it('tryb „wszystkie” podaje ostatni pad', () => {
+    const { b, midi } = setup(mpc('p1'))
+    midi.handle([0x90, 51, 100])
+    b.evaluate(audio, 1 / 60, midi)
+    expect(b.values.get('p1.last')).toBeCloseTo(1)
+    expect(b.values.get('p1.hit')).toBeGreaterThan(0)
+  })
+
+  it('uderzenie sprzed dodania node’a nie odpala hit', () => {
+    const g = withNodes(mpc('p1'))
+    const midi = new MidiState()
+    midi.handle([0x90, 36, 127])
+    midi.handle([0x80, 36, 0])
+    const b = new SignalBus(compileGraph(g), nodesOf(g))
+    b.evaluate(audio, 1 / 60, midi)
+    expect(b.values.get('p1.hit')).toBe(0)
+  })
+
+  it('node usunięty i dodany z tym samym id nie odpala starego uderzenia', () => {
+    const { b, midi, g } = setup(mpc('p1'))
+    const without = { ...g, nodes: g.nodes.filter((n) => n.id !== 'p1') }
+    b.setGraph(compileGraph(without), nodesOf(without))
+    b.evaluate(audio, 1 / 60, midi)
+    midi.handle([0x90, 36, 127])
+    b.setGraph(compileGraph(g), nodesOf(g))
+    b.evaluate(audio, 1 / 60, midi)
+    expect(b.values.get('p1.hit')).toBe(0)
+  })
+
+  it('kabel MPC.hit steruje parametrem filtra', () => {
+    let g = withNodes(mpc('p1'))
+    g = connect(g, { from: 'p1.hit', to: 'vignette1.darkness' })
+    const b = new SignalBus(compileGraph(g), nodesOf(g))
+    const midi = new MidiState()
+    b.evaluate(audio, 1 / 60, midi)
+    midi.handle([0x90, 36, 127])
+    b.evaluate(audio, 0, midi)
+    expect(b.number('vignette1', 'darkness')).toBeCloseTo(1)
   })
 })

@@ -146,7 +146,10 @@ async function main(): Promise<void> {
 
   // Mikrofon/loopback tylko dla okna wizualizacji.
   session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
-    callback(permission === 'media' && front !== null && wc === front.webContents)
+    // Web MIDI na pady Akai MPC (node MPC). Electron 44 prosi o każdy dostęp MIDI jako
+    // 'midiSysex', nawet gdy okno nie żąda SysEx; nasz kod nigdy nie prosi o { sysex: true }.
+    const allowed = permission === 'media' || permission === 'midi' || permission === 'midiSysex'
+    callback(allowed && front !== null && wc === front.webContents)
   })
 
   const openFront = (): void => {

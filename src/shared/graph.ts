@@ -12,6 +12,7 @@ import {
   type NumberParamDef
 } from './nodes'
 import type { Graph, GraphEdge, GraphNode, ParamValue } from './types'
+import { encodeGradient, parseGradient } from './gradient'
 
 export type PortKind = 'video' | 'signal'
 
@@ -451,6 +452,10 @@ export function sanitizeParam(type: NodeType, key: string, value: unknown): Para
       return value === null || (typeof value === 'string' && value.length <= 64) ? value : undefined
     case 'select':
       return def.options.some((o) => o.value === value) ? (value as number) : undefined
+    case 'gradient': {
+      const stops = typeof value === 'string' ? parseGradient(value) : null
+      return stops ? encodeGradient(stops) : undefined
+    }
   }
 }
 

@@ -19,6 +19,11 @@ describe('portColor', () => {
     expect(portColor('AudioIn', 'nope')).toBe('white')
   })
 
+  it('wyjścia MPC są zielone', () => {
+    expect(portColor('MPC', 'hit')).toBe('green')
+    expect(portColor('MPC', 'last')).toBe('green')
+  })
+
   it('LFO, Math i brak typu dają niebieski', () => {
     expect(portColor('LFO', 'value')).toBe('blue')
     expect(portColor('Math', 'out')).toBe('blue')

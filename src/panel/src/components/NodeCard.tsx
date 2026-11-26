@@ -1,6 +1,7 @@
 // Blok node'a z parametrami. Używany w widoku „Efekty” i w inspektorze grafu.
 // Nagłówek `NN / NAZWA [FX] id`, pod nim wszystkie parametry pod jedną lewą linią.
 
+import { GRADIENT_PRESETS } from '@shared/gradient'
 import type { ReactNode } from 'react'
 import { connect, disconnect, incomingEdge, portRef, updateEdge } from '@shared/graph'
 import { NODE_DEFS, type ParamDef } from '@shared/nodes'
@@ -61,6 +62,28 @@ function ParamRow({
           {def.options.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    )
+  }
+
+  if (def.kind === 'gradient') {
+    const current = typeof value === 'string' ? value : def.default
+    const preset = GRADIENT_PRESETS.find((p) => p.value === current)
+    return (
+      <label className="block text-muted">
+        {def.label}
+        <select
+          className={`${selectClass} text-fg`}
+          value={preset ? preset.value : ''}
+          onChange={(e) => e.target.value && setParamValue(node.id, def.key, e.target.value)}
+        >
+          {!preset && <option value="">Własny</option>}
+          {GRADIENT_PRESETS.map((p) => (
+            <option key={p.name} value={p.value}>
+              {p.name}
             </option>
           ))}
         </select>

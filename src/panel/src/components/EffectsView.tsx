@@ -7,7 +7,7 @@ import { commitGraph, setBypass, usePanel } from '../store'
 import { BINDING_FORMULA, NodeCard } from './NodeCard'
 import { AsciiBox, Button, ToggleTag } from './ui'
 
-const CONTROL_TYPES: NodeType[] = ['AudioIn', 'LFO', 'Math']
+const CONTROL_TYPES: NodeType[] = ['AudioIn', 'LFO', 'Math', 'MPC']
 
 export function EffectsView(): React.JSX.Element {
   const graph = usePanel((s) => s.app!.graph)
