@@ -5,6 +5,54 @@ const parse = (v: unknown): ReturnType<typeof parseClientMessage> =>
   parseClientMessage(JSON.stringify(v))
 
 describe('parseClientMessage', () => {
+  it('timeline: sześć komunikatów kolejki', () => {
+    expect(parse({ type: 'timeline:add', videoId: 'v1' })).toEqual({
+      type: 'timeline:add',
+      videoId: 'v1'
+    })
+    expect(parse({ type: 'timeline:remove', id: 'i1' })).toEqual({
+      type: 'timeline:remove',
+      id: 'i1'
+    })
+    expect(parse({ type: 'timeline:move', id: 'i1', to: 2 })).toEqual({
+      type: 'timeline:move',
+      id: 'i1',
+      to: 2
+    })
+    expect(parse({ type: 'timeline:play', playing: true })).toEqual({
+      type: 'timeline:play',
+      playing: true
+    })
+    expect(parse({ type: 'timeline:goto', index: 3 })).toEqual({ type: 'timeline:goto', index: 3 })
+    expect(
+      parse({
+        type: 'timeline:update',
+        id: 'i1',
+        patch: { duration: 8, waitBeat: false, loop: true, inPoint: 1, outPoint: null, hack: 1 }
+      })
+    ).toEqual({
+      type: 'timeline:update',
+      id: 'i1',
+      patch: { duration: 8, waitBeat: false, loop: true, inPoint: 1, outPoint: null }
+    })
+  })
+
+  it('timeline: odrzuca złe pola', () => {
+    expect(parse({ type: 'timeline:add', videoId: 'x'.repeat(65) })).toBeNull()
+    expect(parse({ type: 'timeline:remove', id: 5 })).toBeNull()
+    expect(parse({ type: 'timeline:move', id: 'i1', to: 'top' })).toBeNull()
+    expect(parse({ type: 'timeline:goto', index: null })).toBeNull()
+    expect(parse({ type: 'timeline:play', playing: 'yes' })).toBeNull()
+    expect(parse({ type: 'timeline:update', id: 'i1', patch: 'x' })).toBeNull()
+    expect(
+      parse({
+        type: 'timeline:update',
+        id: 'i1',
+        patch: { duration: 'long', waitBeat: 1, outPoint: 'end' }
+      })
+    ).toEqual({ type: 'timeline:update', id: 'i1', patch: {} })
+  })
+
   it('odrzuca zły JSON, nie-obiekty i nieznane typy', () => {
     expect(parseClientMessage('{nie json')).toBeNull()
     expect(parse(42)).toBeNull()

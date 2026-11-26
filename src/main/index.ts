@@ -85,6 +85,18 @@ async function main(): Promise<void> {
       case 'audio:loopback':
         void loopback.create().then((s) => store.setLoopback(s))
         return
+      case 'timeline:add':
+        return store.timelineAdd(msg.videoId)
+      case 'timeline:remove':
+        return store.timelineRemove(msg.id)
+      case 'timeline:move':
+        return store.timelineMove(msg.id, msg.to)
+      case 'timeline:update':
+        return store.timelineUpdate(msg.id, msg.patch)
+      case 'timeline:play':
+        return store.timelinePlay(msg.playing)
+      case 'timeline:goto':
+        return store.timelineGoto(msg.index)
     }
   }
 
@@ -139,6 +151,9 @@ async function main(): Promise<void> {
   ipcMain.on('front:audio-status', (e, v) => {
     const status = fromFront(e) ? parseAudioStatus(v) : null
     if (status) store.setAudioStatus(status)
+  })
+  ipcMain.on('front:timeline-next', (e) => {
+    if (fromFront(e)) store.timelineNext()
   })
   ipcMain.on('front:open-panel', (e) => {
     if (fromFront(e)) openPanel()

@@ -1,11 +1,28 @@
 // Walidacja wiadomości od klientów (panel w przeglądarce, okno wizualizacji).
 // Wszystko, co przychodzi z zewnątrz, jest niezaufane.
 
-import type { AudioLevels, AudioStatus, ClientMessage, ParamValue } from '@shared/types'
+import type {
+  AudioLevels,
+  AudioStatus,
+  ClientMessage,
+  ParamValue,
+  TimelinePatch
+} from '@shared/types'
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null
 const isStr = (v: unknown, max = 128): v is string => typeof v === 'string' && v.length <= max
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
+
+/** Tylko znane pola o dobrych typach; zakresy pilnuje updateItem. */
+function parsePatch(v: Record<string, unknown>): TimelinePatch {
+  const p: TimelinePatch = {}
+  if (isNum(v.duration)) p.duration = v.duration
+  if (typeof v.waitBeat === 'boolean') p.waitBeat = v.waitBeat
+  if (typeof v.loop === 'boolean') p.loop = v.loop
+  if (isNum(v.inPoint)) p.inPoint = v.inPoint
+  if (v.outPoint === null || isNum(v.outPoint)) p.outPoint = v.outPoint
+  return p
+}
 
 export function parseClientMessage(raw: string): ClientMessage | null {
   let m: unknown
@@ -45,6 +62,20 @@ export function parseClientMessage(raw: string): ClientMessage | null {
       return typeof m.enabled === 'boolean' ? { type: m.type, enabled: m.enabled } : null
     case 'audio:loopback':
       return { type: m.type }
+    case 'timeline:add':
+      return isStr(m.videoId, 64) ? { type: m.type, videoId: m.videoId } : null
+    case 'timeline:remove':
+      return isStr(m.id, 64) ? { type: m.type, id: m.id } : null
+    case 'timeline:move':
+      return isStr(m.id, 64) && isNum(m.to) ? { type: m.type, id: m.id, to: m.to } : null
+    case 'timeline:update':
+      return isStr(m.id, 64) && isObj(m.patch)
+        ? { type: m.type, id: m.id, patch: parsePatch(m.patch) }
+        : null
+    case 'timeline:play':
+      return typeof m.playing === 'boolean' ? { type: m.type, playing: m.playing } : null
+    case 'timeline:goto':
+      return isNum(m.index) ? { type: m.type, index: m.index } : null
     default:
       return null
   }

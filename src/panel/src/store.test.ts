@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defaultGraph, getChain } from '@shared/graph'
 import type { AppState, ClientMessage, ServerMessage } from '@shared/types'
 
@@ -17,6 +17,7 @@ vi.mock('./api', () => ({
   }
 }))
 
+import { emptyTimeline } from '@shared/timeline'
 import {
   commitGraph,
   createLoopback,
@@ -29,8 +30,15 @@ import {
   setFullscreen,
   setGraphLocal,
   setGraphMode,
+  setCrtSkin,
   setLan,
   setParamValue,
+  timelineAdd,
+  timelineGoto,
+  timelineMove,
+  timelinePlay,
+  timelineRemove,
+  timelineUpdate,
   usePanel
 } from './store'
 
@@ -41,6 +49,7 @@ function appState(patch: Partial<AppState> = {}): AppState {
     library: [{ id: 'v1', name: 'a.mp4', size: 1, duration: null, thumb: null }],
     activeId: 'v1',
     graph: defaultGraph(),
+    timeline: emptyTimeline(),
     audio: {
       deviceId: null,
       devices: [],
@@ -183,5 +192,51 @@ describe('defaultBinding', () => {
 
   it('wejście, które nie jest parametrem liczbowym', () => {
     expect(defaultBinding(graph(), 'ghost.x')).toEqual({ scale: 1, offset: 0 })
+  })
+})
+
+describe('styl node’ów CRT', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('setCrtSkin zmienia stan i zapisuje wybór', () => {
+    const store = new Map<string, string>()
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v)
+    })
+    setCrtSkin('blackpanel')
+    expect(usePanel.getState().crtSkin).toBe('blackpanel')
+    expect(store.get('vz.crtSkin')).toBe('blackpanel')
+  })
+
+  it('błąd localStorage nie blokuje zmiany stylu', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error('quota')
+      }
+    })
+    setCrtSkin('blackpanel')
+    expect(usePanel.getState().crtSkin).toBe('blackpanel')
+  })
+})
+
+describe('akcje kolejki klipów', () => {
+  it('każda akcja wysyła jeden komunikat timeline:*', () => {
+    conn.sent.length = 0
+    timelineAdd('v1')
+    timelineRemove('i1')
+    timelineMove('i1', 2)
+    timelineUpdate('i1', { duration: 8, outPoint: null })
+    timelinePlay(true)
+    timelineGoto(3)
+    expect(conn.sent).toEqual([
+      { type: 'timeline:add', videoId: 'v1' },
+      { type: 'timeline:remove', id: 'i1' },
+      { type: 'timeline:move', id: 'i1', to: 2 },
+      { type: 'timeline:update', id: 'i1', patch: { duration: 8, outPoint: null } },
+      { type: 'timeline:play', playing: true },
+      { type: 'timeline:goto', index: 3 }
+    ])
   })
 })

@@ -116,3 +116,51 @@ describe('VideoPool', () => {
     expect(videos[0].playbackRate).toBe(0.5)
   })
 })
+
+describe('VideoPool – fragment od–do', () => {
+  const withDuration = (v: HTMLVideoElement, d: number): void => {
+    Object.defineProperty(v, 'duration', { configurable: true, value: d })
+  }
+
+  it('setRange z restartem przewija aktywne wideo, także przy tym samym pliku', () => {
+    const pool = new VideoPool(() => {})
+    const [a] = videos
+    pool.request('A')
+    playing(a)
+    withDuration(a, 30)
+    a.currentTime = 20
+    pool.request('A')
+    pool.setRange(12, 15, true)
+    expect(a.currentTime).toBe(12)
+    expect(a.loop).toBe(false)
+  })
+
+  it('enforceRange zapętla fragment; bez zakresu nic nie robi', () => {
+    const pool = new VideoPool(() => {})
+    const [a] = videos
+    pool.request('A')
+    playing(a)
+    withDuration(a, 30)
+    a.currentTime = 15
+    pool.enforceRange()
+    expect(a.currentTime).toBe(15)
+    pool.setRange(12, 15, false)
+    pool.enforceRange()
+    expect(a.currentTime).toBe(12)
+    pool.clearRange()
+    expect(a.loop).toBe(true)
+  })
+
+  it('nowy plik startuje od inPoint, a stare wideo nie jest przewijane przed podmianą', () => {
+    const pool = new VideoPool(() => {})
+    const [a, b] = videos
+    pool.request('A')
+    playing(a)
+    a.currentTime = 7
+    pool.request('B')
+    pool.setRange(3, null, true)
+    expect(a.currentTime).toBe(7)
+    b.dispatchEvent(new Event('loadedmetadata'))
+    expect(b.currentTime).toBe(3)
+  })
+})

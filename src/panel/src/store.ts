@@ -4,12 +4,24 @@
 import { create } from 'zustand'
 import { deleteElements, setParam, splitPort } from '@shared/graph'
 import { findNumberParam } from '@shared/nodes'
-import type { AppState, AudioLevels, Graph, ParamValue } from '@shared/types'
+import type { AppState, AudioLevels, Graph, ParamValue, TimelinePatch } from '@shared/types'
 import { connection } from './api'
 
 export type Tab = 'effects' | 'graph'
 /** Tryb edytora grafu: łączenie i dodawanie albo usuwanie kliknięciem. */
 export type GraphMode = 'edit' | 'delete'
+/** Wygląd node'ów CRT w edytorze grafu (preferencja tej przeglądarki). */
+export type CrtSkin = 'hammertone' | 'blackpanel'
+
+const CRT_SKIN_KEY = 'vz.crtSkin'
+
+function loadCrtSkin(): CrtSkin {
+  try {
+    return localStorage.getItem(CRT_SKIN_KEY) === 'blackpanel' ? 'blackpanel' : 'hammertone'
+  } catch {
+    return 'hammertone'
+  }
+}
 
 interface PanelState {
   app: AppState | null
@@ -18,6 +30,7 @@ interface PanelState {
   selected: string | null
   tab: Tab
   graphMode: GraphMode
+  crtSkin: CrtSkin
 }
 
 export const usePanel = create<PanelState>(() => ({
@@ -26,7 +39,8 @@ export const usePanel = create<PanelState>(() => ({
   audio: { bass: 0, mid: 0, high: 0, level: 0, beat: 0 },
   selected: null,
   tab: 'effects',
-  graphMode: 'edit'
+  graphMode: 'edit',
+  crtSkin: loadCrtSkin()
 }))
 
 const patchApp = (fn: (app: AppState) => AppState): void =>
@@ -72,6 +86,15 @@ export function setParamValue(node: string, param: string, value: ParamValue): v
   connection.send({ type: 'effects:set', node, param, value })
 }
 
+export function setCrtSkin(crtSkin: CrtSkin): void {
+  usePanel.setState({ crtSkin })
+  try {
+    localStorage.setItem(CRT_SKIN_KEY, crtSkin)
+  } catch {
+    // Prywatne okno albo zablokowane dane strony: wybór działa do odświeżenia.
+  }
+}
+
 export function setBypass(node: string, bypass: boolean): void {
   connection.send({ type: 'node:bypass', node, bypass })
 }
@@ -107,6 +130,25 @@ export const setFullscreen = (on: boolean, displayId: number | null): void =>
 export const setLan = (enabled: boolean): void => connection.send({ type: 'settings:lan', enabled })
 
 export const createLoopback = (): void => connection.send({ type: 'audio:loopback' })
+
+// --- Kolejka klipów ---
+
+export const timelineAdd = (videoId: string): void =>
+  connection.send({ type: 'timeline:add', videoId })
+
+export const timelineRemove = (id: string): void => connection.send({ type: 'timeline:remove', id })
+
+export const timelineMove = (id: string, to: number): void =>
+  connection.send({ type: 'timeline:move', id, to })
+
+export const timelineUpdate = (id: string, patch: TimelinePatch): void =>
+  connection.send({ type: 'timeline:update', id, patch })
+
+export const timelinePlay = (playing: boolean): void =>
+  connection.send({ type: 'timeline:play', playing })
+
+export const timelineGoto = (index: number): void =>
+  connection.send({ type: 'timeline:goto', index })
 
 /**
  * Domyślny kabel do parametru: sygnał 0..1 dodaje do bieżącej wartości

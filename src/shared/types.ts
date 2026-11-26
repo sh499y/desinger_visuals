@@ -83,10 +83,42 @@ export interface ServerInfo {
   lanUrls: string[]
 }
 
+/** Element kolejki: klip z biblioteki z własnymi efektami i fragmentem. */
+export interface TimelineItem {
+  id: string
+  videoId: string
+  /** Efekty tego klipu. */
+  graph: Graph
+  /** Czas elementu [s], 1–600. */
+  duration: number
+  /** Cięcie na najbliższy beat po upływie czasu elementu. */
+  waitBeat: boolean
+  /** true: fragment zapętlony przez `duration`; false: jedno przejście fragmentu. */
+  loop: boolean
+  /** Początek fragmentu [s]. */
+  inPoint: number
+  /** Koniec fragmentu [s]; null = do końca klipu. */
+  outPoint: number | null
+}
+
+export type TimelinePatch = Partial<
+  Pick<TimelineItem, 'duration' | 'waitBeat' | 'loop' | 'inPoint' | 'outPoint'>
+>
+
+export interface Timeline {
+  playing: boolean
+  /** Graf jest połączony z bieżącym elementem: zmiany efektów zapisują się do niego. */
+  linked: boolean
+  /** Bieżący element. */
+  index: number
+  items: TimelineItem[]
+}
+
 export interface AppState {
   library: VideoItem[]
   activeId: string | null
   graph: Graph
+  timeline: Timeline
   audio: AudioStatus & { deviceId: string | null; loopback: LoopbackStatus }
   output: { fullscreen: boolean; displays: DisplayInfo[] }
   server: ServerInfo
@@ -107,6 +139,12 @@ export type ClientMessage =
   | { type: 'audio:loopback' }
   | { type: 'output:fullscreen'; on: boolean; displayId?: number | null }
   | { type: 'settings:lan'; enabled: boolean }
+  | { type: 'timeline:add'; videoId: string }
+  | { type: 'timeline:remove'; id: string }
+  | { type: 'timeline:move'; id: string; to: number }
+  | { type: 'timeline:update'; id: string; patch: TimelinePatch }
+  | { type: 'timeline:play'; playing: boolean }
+  | { type: 'timeline:goto'; index: number }
 
 /** Serwer → panel (WebSocket) i serwer → okno wizualizacji (IPC). */
 export type ServerMessage =
@@ -129,6 +167,8 @@ export interface FrontApi {
   sendAudio(levels: AudioLevels): void
   sendAudioStatus(status: AudioStatus): void
   openPanel(): void
+  /** Okno wizualizacji prosi o przejście do następnego elementu kolejki. */
+  timelineNext(): void
 }
 
 export const DEFAULT_PORT = 4000

@@ -4,6 +4,15 @@
 import { readFileSync } from 'fs'
 import { writeFile } from 'fs/promises'
 import { defaultGraph, sanitizeGraph, sanitizeParam, updateNode } from '@shared/graph'
+import {
+  addItem,
+  emptyTimeline,
+  moveItem,
+  nextIndex,
+  removeItem,
+  sanitizeTimeline,
+  updateItem
+} from '@shared/timeline'
 import type {
   AppState,
   AudioLevels,
@@ -14,6 +23,8 @@ import type {
   ParamValue,
   ServerInfo,
   ServerMessage,
+  Timeline,
+  TimelinePatch,
   VideoItem
 } from '@shared/types'
 
@@ -21,6 +32,7 @@ interface Persisted {
   graph?: unknown
   activeId?: unknown
   audioDeviceId?: unknown
+  timeline?: unknown
 }
 
 type Listener = (msg: ServerMessage) => void
@@ -29,6 +41,7 @@ export class AppStore {
   private state: AppState
   private listeners = new Set<Listener>()
   private persistTimer: NodeJS.Timeout | null = null
+  private itemCounter = 0
 
   constructor(
     private readonly persistPath: string,
@@ -44,6 +57,7 @@ export class AppStore {
       library: [],
       activeId: typeof saved.activeId === 'string' ? saved.activeId : null,
       graph: saved.graph ? sanitizeGraph(saved.graph) : defaultGraph(),
+      timeline: saved.timeline ? sanitizeTimeline(saved.timeline) : emptyTimeline(),
       audio: {
         deviceId: typeof saved.audioDeviceId === 'string' ? saved.audioDeviceId : null,
         devices: [],
@@ -89,7 +103,8 @@ export class AppStore {
 
   select(id: string | null): void {
     if (id !== null && !this.state.library.some((v) => v.id === id)) return
-    this.update({ activeId: id }, true)
+    // Klip z biblioteki = zwykły, wspólny graf (już nie efekty ujęcia z kolejki).
+    this.update({ activeId: id, timeline: { ...this.state.timeline, linked: false } }, true)
   }
 
   /** Zmiana jednego parametru: wysyła lekką łatkę zamiast pełnego stanu. */
@@ -101,24 +116,98 @@ export class AppStore {
     const nodes = this.state.graph.nodes.map((n) =>
       n === node ? { ...n, params: { ...n.params, [param]: v } } : n
     )
-    this.state = { ...this.state, graph: { ...this.state.graph, nodes } }
+    const graph = { ...this.state.graph, nodes }
+    this.state = { ...this.state, graph, timeline: this.withCurrentGraph(graph) }
     this.emit({ type: 'param', node: nodeId, param, value: v })
     this.schedulePersist()
   }
 
   setBypass(nodeId: string, bypass: boolean): void {
-    this.update(
-      { graph: updateNode(this.state.graph, nodeId, { bypass: bypass || undefined }) },
-      true
-    )
+    this.applyGraph(updateNode(this.state.graph, nodeId, { bypass: bypass || undefined }))
   }
 
   setGraph(graph: unknown): void {
-    this.update({ graph: sanitizeGraph(graph) }, true)
+    this.applyGraph(sanitizeGraph(graph))
   }
 
   loadGraph(graph: Graph): void {
-    this.update({ graph }, true)
+    this.applyGraph(graph)
+  }
+
+  /** Nowy graf; gdy kolejka gra, zapisuje się też do bieżącego elementu. */
+  private applyGraph(graph: Graph): void {
+    this.update({ graph, timeline: this.withCurrentGraph(graph) }, true)
+  }
+
+  private withCurrentGraph(graph: Graph): Timeline {
+    const t = this.state.timeline
+    const item = t.items[t.index]
+    if (!t.linked || !item) return t
+    const items = [...t.items]
+    items[t.index] = { ...item, graph }
+    return { ...t, items }
+  }
+
+  // --- Kolejka klipów ---
+
+  private hasVideo(id: string): boolean {
+    return this.state.library.some((v) => v.id === id)
+  }
+
+  /** Ustawia kolejkę; z `apply` przełącza na klip i graf bieżącego elementu. */
+  private setTimeline(timeline: Timeline, apply = false): void {
+    const item = apply ? timeline.items[timeline.index] : undefined
+    // Pokazany element = graf połączony z nim (edycja efektów trafia do niego).
+    const patch: Partial<AppState> = { timeline: item ? { ...timeline, linked: true } : timeline }
+    if (item) {
+      patch.graph = item.graph
+      if (this.hasVideo(item.videoId)) patch.activeId = item.videoId
+    }
+    this.update(patch, true)
+  }
+
+  timelineAdd(videoId: string): void {
+    if (!this.hasVideo(videoId)) return
+    const id = `t-${++this.itemCounter}-${Date.now().toString(36)}`
+    this.setTimeline(addItem(this.state.timeline, videoId, this.state.graph, id))
+  }
+
+  timelineRemove(id: string): void {
+    const t = this.state.timeline
+    const wasCurrent = t.items[t.index]?.id === id
+    const next = removeItem(t, id)
+    // Usunięty grający element: przełącz na następny razem z jego klipem i grafem.
+    this.setTimeline(next, wasCurrent && next.playing)
+  }
+
+  timelineMove(id: string, to: number): void {
+    this.setTimeline(moveItem(this.state.timeline, id, to))
+  }
+
+  timelineUpdate(id: string, patch: TimelinePatch): void {
+    this.setTimeline(updateItem(this.state.timeline, id, patch))
+  }
+
+  timelinePlay(playing: boolean): void {
+    const t = this.state.timeline
+    if (playing && t.items.length === 0) return
+    this.setTimeline({ ...t, playing }, playing)
+  }
+
+  timelineGoto(index: number): void {
+    const t = this.state.timeline
+    if (!Number.isInteger(index) || index < 0 || index >= t.items.length) return
+    this.setTimeline({ ...t, index }, true)
+  }
+
+  /** Cięcie zgłoszone przez okno wizualizacji. */
+  timelineNext(): void {
+    const t = this.state.timeline
+    if (!t.playing) return
+    const ids = new Set(this.state.library.map((v) => v.id))
+    const next = nextIndex(t, ids)
+    if (next === null) this.setTimeline({ ...t, playing: false })
+    else this.setTimeline({ ...t, index: next }, true)
   }
 
   setAudioDevice(deviceId: string | null): void {
@@ -156,7 +245,8 @@ export class AppStore {
     const data: Persisted = {
       graph: this.state.graph,
       activeId: this.state.activeId,
-      audioDeviceId: this.state.audio.deviceId
+      audioDeviceId: this.state.audio.deviceId,
+      timeline: this.state.timeline
     }
     await writeFile(this.persistPath, JSON.stringify(data)).catch(() => {})
   }

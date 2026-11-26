@@ -10,7 +10,8 @@ const api: FrontApi = {
   },
   sendAudio: (levels: AudioLevels) => ipcRenderer.send('front:audio', levels),
   sendAudioStatus: (status: AudioStatus) => ipcRenderer.send('front:audio-status', status),
-  openPanel: () => ipcRenderer.send('front:open-panel')
+  openPanel: () => ipcRenderer.send('front:open-panel'),
+  timelineNext: () => ipcRenderer.send('front:timeline-next')
 }
 
 contextBridge.exposeInMainWorld('api', api)

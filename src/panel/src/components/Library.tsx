@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import type { VideoItem } from '@shared/types'
 import { api, postJson, uploadFiles, url } from '../api'
 import { asciiBar } from '../ascii'
-import { selectVideo, usePanel } from '../store'
+import { selectVideo, timelineAdd, usePanel } from '../store'
+import { Queue } from './Queue'
 import { AsciiBox, Button, Section, Tag } from './ui'
 
 const attempted = new Set<string>()
@@ -128,6 +129,7 @@ export function Library({ collapsible = false }: { collapsible?: boolean }): Rea
         </Button>
       }
     >
+      <Queue />
       <input
         ref={input}
         type="file"
@@ -204,6 +206,17 @@ export function Library({ collapsible = false }: { collapsible?: boolean }): Rea
                     {active && <Tag className="bg-black text-term-green">live</Tag>}
                   </div>
                 </div>
+                <Button
+                  variant="link"
+                  className="reveal"
+                  title="Dodaj do kolejki"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    timelineAdd(item.id)
+                  }}
+                >
+                  + kolejka
+                </Button>
                 <Button
                   variant="link"
                   className="reveal btn-danger"

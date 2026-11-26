@@ -45,9 +45,11 @@ import {
   deleteFromGraph,
   selectNode,
   setBypass,
+  setCrtSkin,
   setGraphLocal,
   setGraphMode,
   usePanel,
+  type CrtSkin,
   type GraphMode
 } from '../store'
 import { flowSource, isDimmed } from '../flow'
@@ -158,6 +160,38 @@ function ModeSwitch({ mode }: { mode: GraphMode }): React.JSX.Element {
   )
 }
 
+const SKINS: { id: CrtSkin; label: string }[] = [
+  { id: 'hammertone', label: 'Hammertone' },
+  { id: 'blackpanel', label: 'Black panel' }
+]
+
+function SkinSwitch(): React.JSX.Element {
+  const skin = usePanel((s) => s.crtSkin)
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-[10px] uppercase tracking-wider text-neutral-500">Styl CRT</span>
+      <div className="flex overflow-hidden rounded border border-neutral-700" role="radiogroup">
+        {SKINS.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            role="radio"
+            aria-checked={skin === s.id}
+            onClick={() => setCrtSkin(s.id)}
+            className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+              skin === s.id
+                ? 'bg-neutral-700 text-white'
+                : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200'
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function Toolbar({
   container,
   mode
@@ -202,6 +236,7 @@ function Toolbar({
   return (
     <div className="surface flex max-w-full flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2 lg:pointer-events-auto">
       <ModeSwitch mode={mode} />
+      <SkinSwitch />
       {mode === 'edit' ? (
         GROUPS.map((g) => (
           <div key={g.category} className="flex flex-wrap items-center gap-1">

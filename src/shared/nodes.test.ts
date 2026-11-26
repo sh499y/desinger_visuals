@@ -95,3 +95,85 @@ describe('funkcje pomocnicze', () => {
     expect(clamp(0.5, 0, 1)).toBe(0.5)
   })
 })
+
+describe('PosterizeTime', () => {
+  it('filtr z liczbą klatek na sekundę 1–30, domyślnie 12', () => {
+    expect(NODE_DEFS.PosterizeTime.params).toEqual([
+      {
+        key: 'fps',
+        label: 'Klatki na sekundę',
+        kind: 'number',
+        min: 1,
+        max: 30,
+        step: 1,
+        default: 12
+      }
+    ])
+    expect(FILTER_TYPES).toContain('PosterizeTime')
+  })
+})
+
+describe('Mirror', () => {
+  it('filtr z kątem osi odbicia 0–360°, domyślnie 90° (lewo ↔ prawo)', () => {
+    expect(NODE_DEFS.Mirror.params).toEqual([
+      {
+        key: 'angle',
+        label: 'Kąt osi odbicia (°)',
+        kind: 'number',
+        min: 0,
+        max: 360,
+        step: 1,
+        default: 90
+      }
+    ])
+    expect(FILTER_TYPES).toContain('Mirror')
+  })
+})
+
+describe('node’y CRT', () => {
+  it('CRTGuns: trzy działa 0–1, 0,5 = sprawne', () => {
+    const params = NODE_DEFS.CRTGuns.params
+    expect(params.map((p) => p.key)).toEqual(['red', 'green', 'blue'])
+    for (const p of params) expect(p).toMatchObject({ min: 0, max: 1, step: 0.005, default: 0.5 })
+    expect(FILTER_TYPES).toContain('CRTGuns')
+  })
+
+  it.each([
+    ['CRTEcho', ['echo', 'delay', 'spread']],
+    ['CRTSignal', ['hum', 'jitter', 'chroma']]
+  ] as const)('%s: trzy pokrętła 0–1, 0 = czysty sygnał', (type, keys) => {
+    const params = NODE_DEFS[type].params
+    expect(params.map((p) => p.key)).toEqual(keys)
+    for (const p of params) expect(p).toMatchObject({ min: 0, max: 1, step: 0.005, default: 0 })
+    expect(FILTER_TYPES).toContain(type)
+  })
+
+  it('CRTCircuit: HV, odchylanie H i V 0–1, 0,5 = sprawne', () => {
+    const params = NODE_DEFS.CRTCircuit.params
+    expect(params.map((p) => p.key)).toEqual(['hv', 'hdef', 'vdef'])
+    for (const p of params) expect(p).toMatchObject({ min: 0, max: 1, step: 0.005, default: 0.5 })
+    expect(FILTER_TYPES).toContain('CRTCircuit')
+  })
+
+  it('CRTTube: Glow 0,3, Contrast i Color 0,5', () => {
+    const params = NODE_DEFS.CRTTube.params
+    expect(params.map((p) => [p.key, p.default])).toEqual([
+      ['glow', 0.3],
+      ['contrast', 0.5],
+      ['color', 0.5]
+    ])
+    for (const p of params) expect(p).toMatchObject({ min: 0, max: 1, step: 0.005 })
+    expect(FILTER_TYPES).toContain('CRTTube')
+  })
+
+  it('CRTFlicker: Amount 0 (wyłączony), Rate 0,5, Tone 0 (czarne)', () => {
+    const params = NODE_DEFS.CRTFlicker.params
+    expect(params.map((p) => [p.key, p.default])).toEqual([
+      ['amount', 0],
+      ['rate', 0.5],
+      ['tone', 0]
+    ])
+    for (const p of params) expect(p).toMatchObject({ min: 0, max: 1, step: 0.005 })
+    expect(FILTER_TYPES).toContain('CRTFlicker')
+  })
+})
