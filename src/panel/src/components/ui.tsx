@@ -1,4 +1,4 @@
-import { useId, useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
+import { useEffect, useId, useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
 
 // Długie ciągi znaków przycinane przez CSS (`.ascii-fill`, `.ascii-v`), bez liczenia w JS.
 const H_LINE = '─'.repeat(240)
@@ -127,6 +127,51 @@ export function Button({
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }): React.JSX.Element {
   return <button type="button" className={`btn ${variants[variant]} ${className}`} {...props} />
+}
+
+/**
+ * Przycisk z potwierdzeniem w miejscu (bez systemowego okna confirm, które
+ * blokuje stronę): pierwsze kliknięcie zmienia go w „Usuń?”, drugie wykonuje
+ * akcję. Po 3 s albo po zabraniu fokusu wraca do zwykłego stanu.
+ */
+export function ConfirmButton({
+  children,
+  confirmLabel = 'Usuń?',
+  title,
+  className = '',
+  onConfirm
+}: {
+  children: ReactNode
+  confirmLabel?: string
+  title?: string
+  className?: string
+  onConfirm: () => void
+}): React.JSX.Element {
+  const [armed, setArmed] = useState(false)
+  useEffect(() => {
+    if (!armed) return
+    const t = setTimeout(() => setArmed(false), 3000)
+    return () => clearTimeout(t)
+  }, [armed])
+  return (
+    <Button
+      variant={armed ? 'default' : 'link'}
+      // Uzbrojony zostaje widoczny także poza hoverem (bez klas typu `reveal`).
+      className={`btn-danger ${armed ? 'inv' : className}`}
+      title={armed ? 'Kliknij jeszcze raz, żeby potwierdzić' : title}
+      aria-pressed={armed}
+      onBlur={() => setArmed(false)}
+      onClick={(e) => {
+        e.stopPropagation()
+        if (armed) {
+          setArmed(false)
+          onConfirm()
+        } else setArmed(true)
+      }}
+    >
+      {armed ? confirmLabel : children}
+    </Button>
+  )
 }
 
 /** Etykieta w ramce 1px, np. `[FX]`, `[F11]`, `[LIVE]`. */

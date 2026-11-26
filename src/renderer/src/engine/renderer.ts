@@ -153,7 +153,9 @@ export class Engine {
       if (!handle) continue
       // Osobne przejście na efekt: zachowuje kolejność z grafu i pozwala łączyć
       // efekty, których postprocessing nie scala w jednym przejściu.
-      composer.addPass(new EffectPass(this.camera, handle.effect))
+      const pass = handle.pass ?? (handle.effect && new EffectPass(this.camera, handle.effect))
+      if (!pass) continue
+      composer.addPass(pass)
       this.effects.push({ id, handle, get: (key) => this.bus.number(id, key) })
     }
     composer.setSize(this.width, this.height, false)
@@ -200,7 +202,7 @@ export class Engine {
       }
     }
 
-    for (const e of this.effects) e.handle.apply(e.get)
+    for (const e of this.effects) e.handle.apply(e.get, dt)
     this.fitPlane()
     this.composer?.render(dt)
 

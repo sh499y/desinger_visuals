@@ -1,0 +1,380 @@
+/* Node'y CRT w edytorze grafu: dwa style analogowych efektów.
+   A „hammertone”: młotkowany lakier + szczotkowana stal (Warm Audio).
+   B „blackpanel”: czarny panel w orzechowej ramie z miernikiem (Retro Mechanical Labs). */
+
+.crt-node {
+  position: relative;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  user-select: none;
+}
+.crt-node.crt-bypassed {
+  opacity: 0.6;
+}
+.crt-node.crt-selected {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+.crt-node.crt-deletable {
+  cursor: pointer;
+}
+.crt-node.crt-deletable:hover {
+  outline: 2px solid #ef4444;
+  outline-offset: 3px;
+}
+
+/* ---------- pokrętło ---------- */
+.crt-knob {
+  --ks: 46px;
+  --tick: #3a3a3a;
+  position: relative;
+  width: var(--ks);
+  height: var(--ks);
+  margin: 0 auto;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.crt-knob-scale {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from -136deg, var(--tick) 0 2deg, transparent 0 27deg);
+  -webkit-mask:
+    radial-gradient(circle, transparent 63%, #000 64%),
+    conic-gradient(from 135deg, transparent 0 90deg, #000 0);
+  -webkit-mask-composite: source-in;
+  mask:
+    radial-gradient(circle, transparent 63%, #000 64%),
+    conic-gradient(from 135deg, transparent 0 90deg, #000 0);
+  mask-composite: intersect;
+}
+.crt-knob-skirt {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(#f4f4f4, #8d8d8d, #fafafa, #7a7a7a, #e6e6e6, #9a9a9a, #f4f4f4);
+  box-shadow:
+    0 4px 7px rgba(0, 0, 0, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.3) inset;
+}
+.crt-knob-cap {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 40% 30%, rgba(255, 255, 255, 0.18), transparent 55%),
+    repeating-conic-gradient(#151515 0 5deg, #2b2b2b 5deg 10deg);
+  box-shadow: 0 0 0 1px #000;
+}
+.crt-driven .crt-knob-cap {
+  transition: transform 100ms linear;
+}
+.crt-knob-cap::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 9%;
+  width: 3px;
+  height: 32%;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: #f5f5f5;
+}
+.crt-blackpanel .crt-knob-skirt {
+  display: none;
+}
+.crt-blackpanel .crt-knob-cap {
+  inset: 0;
+  background:
+    radial-gradient(circle at 40% 30%, rgba(255, 255, 255, 0.22), transparent 50%),
+    repeating-conic-gradient(#121212 0 12deg, #262626 12deg 15deg);
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.7),
+    0 0 0 2px #0a0a0a;
+}
+
+.crt-col {
+  position: relative;
+  width: 62px;
+}
+.crt-klab {
+  margin-top: 9px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-align: center;
+  text-transform: uppercase;
+}
+.crt-pin {
+  width: 5px;
+  height: 5px;
+  margin: 6px auto 0;
+  border-radius: 50%;
+  background: #3a3a3a;
+}
+.crt-pin.crt-on {
+  background: var(--led);
+  box-shadow: 0 0 6px var(--led);
+}
+
+/* Jack wejścia sygnału = uchwyt React Flow nad pokrętłem. */
+.crt-jacks {
+  position: absolute;
+  top: 0;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  justify-content: space-around;
+  z-index: 1;
+}
+.crt-blackpanel .crt-jacks {
+  left: 17px;
+  right: 17px;
+}
+.crt-node .react-flow__handle.crt-jack {
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    #030303 30%,
+    #d8d8d8 34%,
+    #8a8a8a 58%,
+    #e2e2e2 62%,
+    #6f6f6f 100%
+  );
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.6);
+}
+.crt-node .react-flow__handle.crt-jack.crt-on {
+  box-shadow:
+    0 0 0 2px #22d3ee,
+    0 2px 3px rgba(0, 0, 0, 0.6);
+}
+.crt-node .react-flow__handle.crt-video {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #0e0f11;
+  background: #a78bfa;
+}
+
+.crt-foot {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #fff, #9a9a9a 55%, #5c5c5c);
+  box-shadow:
+    0 0 0 3px #b9b9b9,
+    0 0 0 4px #555,
+    0 3px 5px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+}
+.crt-foot:active {
+  transform: translateY(1px) scale(0.96);
+}
+.crt-status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4a1010;
+}
+.crt-status.crt-on {
+  background: #ff3b30;
+  box-shadow: 0 0 7px #ff3b30;
+}
+
+/* ---------- A: hammertone ---------- */
+.crt-hammertone .crt-body {
+  width: 230px;
+  padding: 10px;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(255, 255, 255, 0.07) 0 1.5px, transparent 2.5px) 0 0 /
+      8px 8px,
+    radial-gradient(circle at 70% 70%, rgba(0, 0, 0, 0.28) 0 1.5px, transparent 2.5px) 0 0 / 6px 6px,
+    linear-gradient(160deg, #5b6155, #3f443a);
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.crt-hammertone .crt-plate {
+  display: flex;
+  justify-content: space-around;
+  padding: 16px 4px 8px;
+  border-radius: 8px;
+  color: #2b2b2b;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.07) 0 1px, transparent 1px 3px),
+    linear-gradient(#d9dcde, #a5aaae);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+}
+.crt-hammertone .crt-foot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 6px 2px;
+}
+.crt-hammertone .crt-name {
+  font:
+    800 13px/1 'Avenir Next',
+    'Futura',
+    sans-serif;
+  letter-spacing: 0.5px;
+  color: #e8442e;
+}
+.crt-hammertone .crt-sub {
+  margin-top: 3px;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #c9cbc4;
+}
+
+/* ---------- B: blackpanel ---------- */
+.crt-blackpanel .crt-body {
+  width: 236px;
+  padding: 7px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #6e3a1d, #3b1a0a 40%, #7a4524 70%, #43200d);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.7);
+}
+.crt-blackpanel .crt-panel {
+  --tick: #cfcfcf;
+  position: relative;
+  padding: 14px 10px 12px;
+  border-radius: 3px;
+  color: #e4e2dc;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.035) 1px, transparent 1.5px) 0 0 / 4px 4px,
+    #1d1d1d;
+  box-shadow:
+    inset 0 0 0 1px #000,
+    inset 0 2px 6px rgba(0, 0, 0, 0.8);
+}
+.crt-blackpanel .crt-knob {
+  --tick: #cfcfcf;
+}
+.crt-blackpanel .crt-klab,
+.crt-blackpanel .crt-name {
+  font-family: 'Futura', 'Century Gothic', 'Avenir Next', sans-serif;
+}
+.crt-blackpanel .crt-name {
+  margin: 4px 0 14px;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-align: center;
+  text-transform: uppercase;
+}
+.crt-blackpanel .crt-row {
+  display: flex;
+  justify-content: space-around;
+}
+.crt-blackpanel .crt-foot-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+.crt-screw {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: radial-gradient(#333 30%, #111);
+  box-shadow: inset 0 0 0 1px #000;
+}
+.crt-screw::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 1px;
+  right: 1px;
+  height: 1px;
+  background: #000;
+  transform: rotate(40deg);
+}
+
+/* Miernik kV (styl B, CRT Circuit). */
+.crt-meter {
+  width: 132px;
+  height: 62px;
+  margin: 0 auto 14px;
+  padding: 4px;
+  border-radius: 6px;
+  background: #0b0b0b;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+.crt-meter-face {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 3px;
+  background: radial-gradient(ellipse at 50% 120%, #f6efd9, #e7dcb9);
+}
+.crt-meter-face svg {
+  position: absolute;
+  inset: 0;
+}
+.crt-needle {
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 1.5px;
+  height: 56px;
+  margin-left: -0.75px;
+  background: #c0261b;
+  transform-origin: 50% 100%;
+  transition: transform 100ms linear;
+}
+.crt-meter-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  font:
+    600 7px/1 'Futura',
+    sans-serif;
+  letter-spacing: 1.5px;
+  text-align: center;
+  color: #3b3527;
+}
+
+/* Modulacja: cyjanowy łuk zakresu kabla i pierścień do ustawiania głębokości. */
+.crt-knob-arc {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px rgba(34, 211, 238, 0.7));
+  -webkit-mask: radial-gradient(circle, transparent 60%, #000 62%);
+  mask: radial-gradient(circle, transparent 60%, #000 62%);
+}
+.crt-knob-ring {
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  cursor: ns-resize;
+}
+.crt-knob-ring:hover {
+  box-shadow: inset 0 0 0 2px rgba(34, 211, 238, 0.45);
+}
+.crt-knob.crt-driven {
+  cursor: ns-resize;
+}
+.crt-modread {
+  margin-top: 2px;
+  font:
+    600 8px/1 ui-monospace,
+    monospace;
+  letter-spacing: 0.3px;
+  text-align: center;
+  color: #0e7490;
+}
+.crt-blackpanel .crt-modread {
+  color: #22d3ee;
+}

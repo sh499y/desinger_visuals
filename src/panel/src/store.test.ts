@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defaultGraph, getChain } from '@shared/graph'
 import type { AppState, ClientMessage, ServerMessage } from '@shared/types'
 
@@ -29,8 +29,11 @@ import {
   setFullscreen,
   setGraphLocal,
   setGraphMode,
+  setCrtSkin,
   setLan,
   setParamValue,
+  undo,
+  redo,
   usePanel
 } from './store'
 
@@ -183,5 +186,102 @@ describe('defaultBinding', () => {
 
   it('wejście, które nie jest parametrem liczbowym', () => {
     expect(defaultBinding(graph(), 'ghost.x')).toEqual({ scale: 1, offset: 0 })
+  })
+})
+
+describe('styl node’ów CRT', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('setCrtSkin zmienia stan i zapisuje wybór', () => {
+    const store = new Map<string, string>()
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v)
+    })
+    setCrtSkin('blackpanel')
+    expect(usePanel.getState().crtSkin).toBe('blackpanel')
+    expect(store.get('vz.crtSkin')).toBe('blackpanel')
+  })
+
+  it('błąd localStorage nie blokuje zmiany stylu', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error('quota')
+      }
+    })
+    setCrtSkin('blackpanel')
+    expect(usePanel.getState().crtSkin).toBe('blackpanel')
+  })
+})
+
+describe('cofanie (undo/redo)', () => {
+  const darkness = (): unknown =>
+    usePanel.getState().app!.graph.nodes.find((n) => n.id === 'vig')?.params.darkness
+
+  beforeEach(() => {
+    const g = defaultGraph()
+    receive({
+      type: 'state',
+      ...appState({
+        graph: {
+          ...g,
+          nodes: [
+            ...g.nodes,
+            { id: 'vig', type: 'Vignette', params: { darkness: 0.5 }, position: { x: 0, y: 0 } }
+          ]
+        }
+      })
+    })
+    conn.sent.length = 0
+  })
+
+  it('cofa zmianę parametru; seria zmian tego samego suwaka to jeden krok', () => {
+    setParamValue('vig', 'darkness', 0.6)
+    setParamValue('vig', 'darkness', 0.7)
+    setParamValue('vig', 'darkness', 0.8)
+    undo()
+    expect(darkness()).toBe(0.5)
+    expect(conn.sent.at(-1)).toMatchObject({ type: 'graph:set' })
+    redo()
+    expect(darkness()).toBe(0.8)
+  })
+
+  it('cofa zmiany struktury i bypass po kolei', () => {
+    const before = usePanel.getState().app!.graph
+    commitGraph({ ...before, nodes: before.nodes.filter((n) => n.id !== 'vig') })
+    expect(darkness()).toBeUndefined()
+    undo()
+    expect(darkness()).toBe(0.5)
+    setBypass('vig', true)
+    undo()
+    expect(usePanel.getState().app!.graph).toEqual(before)
+  })
+
+  it('przeciąganie (zmiana lokalna, zatwierdzona po puszczeniu) cofa się do stanu sprzed przeciągania', () => {
+    const before = usePanel.getState().app!.graph
+    const moved = {
+      ...before,
+      nodes: before.nodes.map((n) => (n.id === 'vig' ? { ...n, position: { x: 50, y: 50 } } : n))
+    }
+    setGraphLocal(moved)
+    commitGraph(moved)
+    undo()
+    expect(usePanel.getState().app!.graph).toEqual(before)
+  })
+
+  it('nowa zmiana po cofnięciu kasuje ponawianie; pusta historia nic nie wysyła', () => {
+    setParamValue('vig', 'darkness', 0.9)
+    undo()
+    setParamValue('vig', 'darkness', 0.1)
+    conn.sent.length = 0
+    redo()
+    expect(conn.sent).toEqual([])
+    undo()
+    undo()
+    expect(darkness()).toBe(0.5)
+    conn.sent.length = 0
+    undo()
+    expect(conn.sent).toEqual([])
   })
 })

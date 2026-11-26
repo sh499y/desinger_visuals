@@ -5,7 +5,7 @@ import type { VideoItem } from '@shared/types'
 import { api, postJson, uploadFiles, url } from '../api'
 import { asciiBar } from '../ascii'
 import { selectVideo, usePanel } from '../store'
-import { AsciiBox, Button, Section, Tag } from './ui'
+import { AsciiBox, Button, ConfirmButton, Section, Tag } from './ui'
 
 const attempted = new Set<string>()
 
@@ -93,7 +93,6 @@ export function Library({ collapsible = false }: { collapsible?: boolean }): Rea
   }
 
   const remove = async (item: VideoItem): Promise<void> => {
-    if (!confirm(`Usunąć „${item.name}” z dysku?`)) return
     await api(`/api/library/${item.id}`, { method: 'DELETE' }).catch((err) => setError(String(err)))
   }
 
@@ -204,17 +203,13 @@ export function Library({ collapsible = false }: { collapsible?: boolean }): Rea
                     {active && <Tag className="bg-black text-term-green">live</Tag>}
                   </div>
                 </div>
-                <Button
-                  variant="link"
-                  className="reveal btn-danger"
+                <ConfirmButton
+                  className="reveal"
                   title="Usuń z dysku"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    void remove(item)
-                  }}
+                  onConfirm={() => void remove(item)}
                 >
                   ×
-                </Button>
+                </ConfirmButton>
               </div>
             )
           })}

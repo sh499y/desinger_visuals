@@ -11,6 +11,14 @@ export type NodeType =
   | 'Glitch'
   | 'Noise'
   | 'Vignette'
+  | 'Mirror'
+  | 'PosterizeTime'
+  | 'CRTGuns'
+  | 'CRTCircuit'
+  | 'CRTEcho'
+  | 'CRTSignal'
+  | 'CRTTube'
+  | 'CRTFlicker'
   | 'AudioIn'
   | 'LFO'
   | 'Math'
@@ -127,6 +135,44 @@ export const NODE_DEFS: Record<NodeType, NodeDef> = {
   Vignette: filter('Vignette', 'Winieta', [
     num('offset', 'Rozmiar', 0, 1, 0.01, 0.35),
     num('darkness', 'Ciemność', 0, 1, 0.01, 0.6)
+  ]),
+  PosterizeTime: filter('PosterizeTime', 'Posterize Time', [
+    num('fps', 'Klatki na sekundę', 1, 30, 1, 12)
+  ]),
+  Mirror: filter('Mirror', 'Mirror', [
+    num('angle', 'Kąt osi odbicia (°)', 0, 360, 1, 90),
+    num('offset', 'Odległość osi od środka', -0.5, 0.5, 0.005, 0),
+    num('softness', 'Miękkość krawędzi', 0, 0.3, 0.005, 0.06)
+  ]),
+  CRTGuns: filter('CRTGuns', 'CRT Guns', [
+    num('red', 'Działo R', 0, 1, 0.005, 0.5),
+    num('green', 'Działo G', 0, 1, 0.005, 0.5),
+    num('blue', 'Działo B', 0, 1, 0.005, 0.5)
+  ]),
+  CRTEcho: filter('CRTEcho', 'CRT Echo', [
+    num('echo', 'Echo (odbicia)', 0, 1, 0.005, 0),
+    num('delay', 'Opóźnienie echa', 0, 1, 0.005, 0),
+    num('spread', 'Rozjazd kolorów', 0, 1, 0.005, 0)
+  ]),
+  CRTSignal: filter('CRTSignal', 'CRT Signal', [
+    num('hum', 'Przydźwięk 50 Hz', 0, 1, 0.005, 0),
+    num('jitter', 'Szarpanie linii', 0, 1, 0.005, 0),
+    num('chroma', 'Rozlewanie koloru', 0, 1, 0.005, 0)
+  ]),
+  CRTCircuit: filter('CRTCircuit', 'CRT Circuit', [
+    num('hv', 'Anoda HV', 0, 1, 0.005, 0.5),
+    num('hdef', 'Odchylanie H', 0, 1, 0.005, 0.5),
+    num('vdef', 'Odchylanie V', 0, 1, 0.005, 0.5)
+  ]),
+  CRTTube: filter('CRTTube', 'CRT Tube', [
+    num('glow', 'Halacja (poświata szkła)', 0, 1, 0.005, 0.3),
+    num('contrast', 'Krzywa kineskopu', 0, 1, 0.005, 0.5),
+    num('color', 'Nasycenie luminoforów', 0, 1, 0.005, 0.5)
+  ]),
+  CRTFlicker: filter('CRTFlicker', 'CRT Flicker', [
+    num('amount', 'Siła błysku', 0, 1, 0.005, 0),
+    num('rate', 'Błyski na sekundę (0,5–20)', 0, 1, 0.005, 0.5),
+    num('tone', 'Kolor: czarne → białe', 0, 1, 0.005, 0)
   ]),
   AudioIn: {
     type: 'AudioIn',
